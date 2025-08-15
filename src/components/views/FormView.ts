@@ -5,9 +5,9 @@ export class FormView<T> extends BaseComponent<T> {
   protected submitButton!: HTMLButtonElement;
   protected errorBox!: HTMLElement;
 
-  render(_: T) {
+  render(data?: T) {
     // форма уже создана в наследниках — здесь просто возвращаем контейнер
-    return super.render();
+    return super.render(data);
   }
 
   protected setError(msg: string) {
@@ -16,5 +16,5 @@ export class FormView<T> extends BaseComponent<T> {
 
   protected setSubmitEnabled(enabled: boolean) {
     if (this.submitButton) this.submitButton.disabled = !enabled;
-  }
+  }
 }

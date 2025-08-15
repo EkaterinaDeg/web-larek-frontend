@@ -2,6 +2,7 @@ import type { ApiProduct } from '../types';
 import { EventBus } from '../base/EventBus';
 
 export class BasketModel {
+  [x: string]: any;
   items: string[] = [];
 
   constructor(private bus: EventBus) {}
@@ -34,6 +35,6 @@ export class BasketModel {
     this.bus.emit('basket:changed', {
       items: this.items.slice(),
       total: this.getTotal(products),
-    });
-  }
+    });
+  }
 }

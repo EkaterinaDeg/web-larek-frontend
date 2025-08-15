@@ -4,15 +4,17 @@ import { BaseComponent } from '../base/BaseComponent';
 
 export type Payment = 'card' | 'cash';
 
-export class OrderFormView extends FormView<unknown> {
+export class OrderFormView extends FormView<unknown> { 
   private payment: Payment | null = null;
   private address = '';
 
-  constructor(bus: EventBus) {
-    const root = (new BaseComponent(document.createElement('div'), bus)).cloneTemplate<HTMLElement>('order');
-    super(root, bus);
+  constructor(bus: EventBus, templateId: string) {
+    super(document.createElement('div'), bus, templateId); // Вызов конструктора BaseComponent
+    
+    // Теперь используем this для доступа к защищенному методу cloneTemplate
+    const root = this.cloneTemplate<HTMLElement>(templateId);
 
-    this.form = root as HTMLFormElement;
+    this.form = root.querySelector('.form') as HTMLFormElement;
     this.submitButton = this.form.querySelector<HTMLButtonElement>('.order__button')!;
     this.errorBox = this.form.querySelector<HTMLElement>('.form__errors')!;
 
@@ -34,6 +36,7 @@ export class OrderFormView extends FormView<unknown> {
       e.preventDefault();
       if (!this.payment) return;
       this.bus.emit('order:contacts', { address: this.address, payment: this.payment });
-    });
-  }
+      // Если вам нужно делать что-то при отправке, добавьте здесь нужный код
+    });
+  }
 }

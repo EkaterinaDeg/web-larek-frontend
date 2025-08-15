@@ -7,7 +7,7 @@ export class CardView extends BaseComponent<ViewProduct> {
 
   constructor(bus: EventBus) {
     const el = document.createElement('div'); // Создаем элемент div
-    super(el, bus); // Передаем его в базовый класс
+    super(el, bus, 'basket'); // Передаем его в базовый класс
     this.el = this.cloneTemplate<HTMLElement>('card-preview'); // Клонируем шаблон
   }
 

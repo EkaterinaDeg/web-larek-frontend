@@ -3,7 +3,10 @@ import { EventBus } from '../base/EventBus';
 import type { IEventPayloads } from '../base/events';
 import { ApiClient } from '../base/ApiClient';
 
+
+
 export class ProductModel {
+  [x: string]: any;
   products: ApiProduct[] = [];
 
   constructor(private api: ApiClient, private bus: EventBus) {

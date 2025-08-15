@@ -2,11 +2,14 @@ import { BaseComponent } from '../base/BaseComponent';
 import { EventBus } from '../base/EventBus';
 
 export class ModalView extends BaseComponent {
+  open(arg0: HTMLElement) {
+    throw new Error('Method not implemented.');
+  }
   private contentEl: HTMLElement;
   private closeBtn: HTMLButtonElement;
 
-  constructor(container: HTMLElement, bus: EventBus) {
-    super(container, bus);
+  constructor(container: HTMLElement, bus: EventBus, templateId: string) {
+    super(container, bus, templateId);
     this.contentEl = container.querySelector('.modal__content') as HTMLElement;
     this.closeBtn = container.querySelector('.modal__close') as HTMLButtonElement;
     this.closeBtn.addEventListener('click', () => this.bus.emit('modal:close', undefined));

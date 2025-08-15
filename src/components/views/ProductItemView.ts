@@ -5,9 +5,9 @@ import { EventBus } from '../base/EventBus';
 export class CardView extends BaseComponent<ViewProduct> {
   private data!: ViewProduct;
 
-  constructor(bus: EventBus) {
-    const el = new BaseComponent(document.createElement('div'), bus).cloneTemplate<HTMLElement>('card-preview');
-    super(el, bus);
+  constructor(bus: EventBus, templateId: string) {
+    super(document.createElement('div'), bus, templateId)
+    const el = this.cloneTemplate<HTMLElement>('card-preview');
   }
 
   render(data: ViewProduct) {
@@ -20,5 +20,5 @@ export class CardView extends BaseComponent<ViewProduct> {
     btn.disabled = data.inBasket;
     btn.onclick = () => this.bus.emit('product:add', { id: data.id });
     return super.render();
-  }
+  }
 }

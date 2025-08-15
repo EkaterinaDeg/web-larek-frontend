@@ -1,12 +1,14 @@
 import { EventBus } from './EventBus';
 
-export abstract class BaseComponent<T = unknown> {
+export class BaseComponent<T = unknown> {
   protected el: HTMLElement;
   protected bus: EventBus;
+  templateId: string;
 
-  constructor(container: HTMLElement, bus: EventBus) {
-    this.el = container;
+  constructor(container: HTMLElement, bus: EventBus, templateId: string) {
+    this.el = templateId ? this.cloneTemplate(templateId): container;
     this.bus = bus;
+    this.templateId = templateId;
   }
 
   render(_: T | void): HTMLElement {
@@ -21,7 +23,7 @@ export abstract class BaseComponent<T = unknown> {
     this.el.classList.add('hidden');
   }
 
-  protected setText(selector: string, value: string) {
+  protected setText(selector: string, value: string ) {
     const n = this.el.querySelector<HTMLElement>(selector);
     if (n) n.textContent = value;
   }
@@ -49,6 +51,6 @@ export abstract class BaseComponent<T = unknown> {
     const tpl = document.getElementById(id) as HTMLTemplateElement | null;
     if (!tpl) throw new Error(`Template #${id} not found`);
     return tpl.content.firstElementChild!.cloneNode(true) as T;
-  }
+  }
 }
 

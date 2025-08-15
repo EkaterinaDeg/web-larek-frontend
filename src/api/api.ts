@@ -12,7 +12,6 @@ export class Api {
   constructor(baseUrl: string, options: RequestInit = {}) {
     this.baseUrl = baseUrl;
 
-    // Безопасное объединение headers
     const baseHeaders = {
       'Content-Type': 'application/json',
     };
@@ -36,18 +35,18 @@ export class Api {
     }
   }
 
-  get<T = any>(uri: string): Promise<T> {
+  get<T = any>(uri: string): Promise<T> { // Изменено на строку
     return fetch(this.baseUrl + uri, {
       ...this.options,
       method: 'GET',
     }).then(this.handleResponse);
   }
 
-  post<T = any>(uri: string, data: object, method: ApiPostMethods = 'POST'): Promise<T> {
+  post<T = any>(uri: string, data: object): Promise<T> { // Убрали метод
     return fetch(this.baseUrl + uri, {
       ...this.options,
-      method,
+      method: 'POST',
       body: JSON.stringify(data),
     }).then(this.handleResponse);
-}
+  }
 }

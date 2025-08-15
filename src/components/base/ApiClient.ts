@@ -1,33 +1,29 @@
-// base/ApiClient.ts
-// адаптер API -> IApiClient (использует Api)
+import type { IApiClient, ApiProduct, ApiOrder, ApiOrderResponse } from '../types';
 import { Api } from '../../api/api';
-import type { ApiProduct, ApiOrder, ApiOrderResponse } from '../types';
 
-export class ApiClient {
-  constructor(private baseUrl: string, private options: RequestInit = {}) {}
-
-  private async _request<T>(uri: string, init?: RequestInit): Promise<T> {
-    const res = await fetch(this.baseUrl + uri, {
-      headers: { 'Content-Type': 'application/json', ...(this.options.headers || {}) },
-      ...this.options,
-      ...init,
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
-    return res.json() as Promise<T>;
+/**
+ * Обёртка над низкоуровневым Api, реализующая интерфейс IApiClient.
+ */
+export class ApiClient implements IApiClient {
+  constructor(private api: Api) {}
+  
+  get<T>(endpoint: string): Promise<T> {
+    throw new Error('Method not implemented.');
+  }
+  
+  post<T>(endpoint: string, data: object): Promise<T> {
+    throw new Error('Method not implemented.');
   }
 
-  getProducts(): Promise<ApiProduct[]> {
-    return this._request<ApiProduct[]>('/products');
+  async getProducts(): Promise<ApiProduct[]> {
+    return this.api.get<ApiProduct[]>('/product');
   }
 
-  getProduct(id: string): Promise<ApiProduct> {
-    return this._request<ApiProduct>(`/products/${id}`);
+  async getProduct(id: string): Promise<ApiProduct> {
+    return this.api.get<ApiProduct>(`/product/${id}`); // Исправлено
   }
 
-  createOrder(order: ApiOrder): Promise<ApiOrderResponse> {
-    return this._request<ApiOrderResponse>('/orders', {
-      method: 'POST',
-      body: JSON.stringify(order),
-    });
-  }
+  async createOrder(order: ApiOrder): Promise<ApiOrderResponse> {
+    return this.api.post<ApiOrderResponse>('/order', order); // Исправлено
+  }
 }

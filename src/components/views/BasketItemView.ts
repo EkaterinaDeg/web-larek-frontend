@@ -4,9 +4,7 @@ import { EventBus } from '../base/EventBus';
 
 export class BasketItemView extends BaseComponent<{ index: number; product: ApiProduct }> {
   constructor(bus: EventBus) {
-    const el = document.createElement('div'); // Создаем элемент div
-    super(el, bus); // Передаем его в базовый класс
-    this.el = this.cloneTemplate<HTMLElement>('card-basket'); // Клонируем шаблон
+    super(document.createElement('div'), bus, 'card-basket');
   }
 
   render({ index, product }: { index: number; product: ApiProduct }) {
@@ -17,6 +15,8 @@ export class BasketItemView extends BaseComponent<{ index: number; product: ApiP
     this.el.querySelector<HTMLButtonElement>('.basket__item-delete')!
       .addEventListener('click', () => this.bus.emit('product:remove', { id: product.id }));
 
-    return super.render();
+    return super.render(); // Можно оставить так
+    // Или так, если хотите явно указать, что не передаете аргументы
+    // return super.render(undefined);
   }
 }

@@ -22,5 +22,5 @@ export class EventBus {
 
   clear() {
     this.listeners.clear();
-  }
+  }
 }

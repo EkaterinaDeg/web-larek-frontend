@@ -10,7 +10,7 @@ export class BasketView extends BaseComponent<{ products: ApiProduct[] }> {
 
   constructor(bus: EventBus) {
     const el = document.createElement('div'); // Создаем элемент div
-    super(el, bus); // Передаем его в базовый класс
+    super(el, bus, 'basket'); // Передаем его в базовый класс
     this.el = this.cloneTemplate<HTMLElement>('basket'); // Клонируем шаблон
     this.list = this.el.querySelector('.basket__list') as HTMLElement;
     this.totalEl = this.el.querySelector('.basket__price') as HTMLElement;
