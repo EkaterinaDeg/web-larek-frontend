@@ -46,7 +46,11 @@ export function ensureElement<T extends HTMLElement>(selectorElement: SelectorEl
 
 export function cloneTemplate<T extends HTMLElement>(query: string | HTMLTemplateElement): T {
     const template = ensureElement(query) as HTMLTemplateElement;
-    return template.content.firstElementChild.cloneNode(true) as T;
+    const element = template.content.firstElementChild;
+    if (!element) {
+        throw new Error('Template is empty or does not contain any elements');
+    }
+    return element.cloneNode(true) as T;
 }
 
 export function bem(block: string, element?: string, modifier?: string): { name: string, class: string } {

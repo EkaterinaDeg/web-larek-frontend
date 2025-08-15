@@ -7,6 +7,9 @@
     "allowJs": true,
     "experimentalDecorators": true,
     "moduleResolution": "node",
+    "strict": true,
+    "outDir": "./dist",
+    "esModuleInterop": true
   },
-  "include": ["src/**/*.ts", "src/types/*.d.ts"]
+  "include": ["src/**/*.ts", "src/components/types/*.d.ts", "src/components/Loader.tsx"]
 }

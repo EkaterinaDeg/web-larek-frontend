@@ -89,3 +89,38 @@ export class EventEmitter implements IEvents {
     }
 }
 
+import type { ApiOrder, ApiOrderResponse, ApiProduct } from '../types';
+
+export type AppEvent =
+  | 'products:load'
+  | 'products:loaded'
+  | 'product:preview'
+  | 'product:add'
+  | 'product:remove'
+  | 'basket:open'
+  | 'basket:changed'
+  | 'modal:open'
+  | 'modal:close'
+  | 'order:open'
+  | 'order:contacts'
+  | 'order:submit'
+  | 'order:created'
+  | 'ui:error';
+
+export interface IEventPayloads {
+  'products:load': undefined;
+  'products:loaded': { products: ApiProduct[] };
+  'product:preview': { id: string };
+  'product:add': { id: string };
+  'product:remove': { id: string };
+  'basket:open': undefined;
+  'basket:changed': { items: string[]; total: number };
+  'modal:open': { content: HTMLElement };
+  'modal:close': undefined;
+  'order:open': undefined;
+  'order:contacts': { address: string; payment: 'card' | 'cash' };
+  'order:submit': { order: ApiOrder };
+  'order:created': { response: ApiOrderResponse };
+  'ui:error': { message: string };
+}
+
