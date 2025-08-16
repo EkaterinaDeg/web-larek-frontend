@@ -1,25 +1,31 @@
-import type { ApiProduct } from '../types';
+import type { ApiProduct, IProductModel } from '../types/type';
 import { EventBus } from '../base/EventBus';
-import type { IEventPayloads } from '../base/events';
-import { ApiClient } from '../base/ApiClient';
+import { IApiClient } from '../types/type'; // Используем интерфейс
 
-
-
-export class ProductModel {
-  [x: string]: any;
+export class ProductModel implements IProductModel {
   products: ApiProduct[] = [];
+  events: EventBus;
 
-  constructor(private api: ApiClient, private bus: EventBus) {
+  constructor(private api: IApiClient, private bus: EventBus) {
+    this.events = bus;
     this.bus.on('products:load', () => this.load());
   }
 
   async load() {
-    const products = await this.api.getProducts();
-    this.products = products;
-    this.bus.emit('products:loaded', { products } as IEventPayloads['products:loaded']);
+    try {
+      const response = await this.api.get<ApiProduct[]>('/products'); // Используем get
+      this.setProducts(response);
+      this.bus.emit('products:loaded', { products: response });
+    } catch (err) {
+      this.bus.emit('ui:error', { message: 'Ошибка загрузки товаров' });
+    }
   }
 
-  getProductById(id: string) {
+  setProducts(products: ApiProduct[]) {
+    this.products = products;
+  }
+
+  getProduct(id: string) {
     return this.products.find((p) => p.id === id);
   }
 }

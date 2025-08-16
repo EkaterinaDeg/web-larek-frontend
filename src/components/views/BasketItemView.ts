@@ -1,22 +1,27 @@
 import { BaseComponent } from '../base/BaseComponent';
-import type { ApiProduct } from '../types';
+import type { ApiProduct } from '../types/type';
 import { EventBus } from '../base/EventBus';
 
 export class BasketItemView extends BaseComponent<{ index: number; product: ApiProduct }> {
   constructor(bus: EventBus) {
-    super(document.createElement('div'), bus, 'card-basket');
+    super(document.createElement('li'), bus);
+    this.el.className = 'basket__item';
   }
 
-  render({ index, product }: { index: number; product: ApiProduct }) {
-    this.setText('.basket__item-index', String(index));
-    this.setText('.card__title', product.title);
-    this.setText('.card__price', `${product.price ?? 0} синапсов`);
+  render(data: { index: number; product: ApiProduct }) {
+    this.el.innerHTML = '';
+    const index = this.createElement('span', 'basket__item-index');
+    const title = this.createElement('h3', 'card__title');
+    const price = this.createElement('p', 'card__price');
+    const deleteBtn = this.createElement('button', 'basket__item-delete');
 
-    this.el.querySelector<HTMLButtonElement>('.basket__item-delete')!
-      .addEventListener('click', () => this.bus.emit('product:remove', { id: product.id }));
+    index.textContent = `${data.index}`;
+    title.textContent = data.product.title;
+    price.textContent = `${data.product.price} синапсов`;
+    deleteBtn.textContent = 'Удалить';
+    deleteBtn.onclick = () => this.bus.emit('product:remove', { id: data.product.id });
 
-    return super.render(); // Можно оставить так
-    // Или так, если хотите явно указать, что не передаете аргументы
-    // return super.render(undefined);
+    this.el.append(index, title, price, deleteBtn);
+    return this.el;
   }
 }

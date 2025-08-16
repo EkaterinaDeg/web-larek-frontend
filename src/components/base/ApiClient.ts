@@ -1,29 +1,34 @@
-import type { IApiClient, ApiProduct, ApiOrder, ApiOrderResponse } from '../types';
-import { Api } from '../../api/api';
+import { IApiClient } from '../types/type';
 
-/**
- * Обёртка над низкоуровневым Api, реализующая интерфейс IApiClient.
- */
 export class ApiClient implements IApiClient {
-  constructor(private api: Api) {}
-  
+  constructor(private baseUrl: string, private headers: Record<string, string>) {}
+
+  async get<T>(endpoint: string): Promise<T> {
+    const response = await fetch(`${this.baseUrl}${endpoint}`, { headers: this.headers });
+    if (!response.ok) throw new Error('Network response was not ok');
+    return response.json();
+  }
+
+  async post<T>(endpoint: string, data: object): Promise<T> {
+    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      method: 'POST',
+      headers: this.headers,
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) throw new Error('Network response was not ok');
+    return response.json();
+  }
+}
+
+// api.ts
+export class Api {
+  constructor(private baseUrl: string, private options: Record<string, any>) {}
+
   get<T>(endpoint: string): Promise<T> {
-    throw new Error('Method not implemented.');
+    return new ApiClient(this.baseUrl, this.options.headers).get<T>(endpoint);
   }
-  
+
   post<T>(endpoint: string, data: object): Promise<T> {
-    throw new Error('Method not implemented.');
-  }
-
-  async getProducts(): Promise<ApiProduct[]> {
-    return this.api.get<ApiProduct[]>('/product');
-  }
-
-  async getProduct(id: string): Promise<ApiProduct> {
-    return this.api.get<ApiProduct>(`/product/${id}`); // Исправлено
-  }
-
-  async createOrder(order: ApiOrder): Promise<ApiOrderResponse> {
-    return this.api.post<ApiOrderResponse>('/order', order); // Исправлено
+    return new ApiClient(this.baseUrl, this.options.headers).post<T>(endpoint, data);
   }
 }

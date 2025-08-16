@@ -1,12 +1,12 @@
 import { BaseComponent } from '../base/BaseComponent';
-import type { ViewProduct } from '../types';
+import type { ViewProduct } from '../types/type';
 import { EventBus } from '../base/EventBus';
 
 export class CardView extends BaseComponent<ViewProduct> {
   private data!: ViewProduct;
 
   constructor(bus: EventBus, templateId: string) {
-    super(document.createElement('div'), bus, templateId)
+    super(document.createElement('div'), bus)
     const el = this.cloneTemplate<HTMLElement>('card-preview');
   }
 

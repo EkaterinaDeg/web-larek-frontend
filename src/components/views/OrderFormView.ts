@@ -1,42 +1,52 @@
 import { FormView } from './FormView';
 import { EventBus } from '../base/EventBus';
-import { BaseComponent } from '../base/BaseComponent';
 
 export type Payment = 'card' | 'cash';
 
-export class OrderFormView extends FormView<unknown> { 
+export class OrderFormView extends FormView<unknown> {
   private payment: Payment | null = null;
   private address = '';
 
-  constructor(bus: EventBus, templateId: string) {
-    super(document.createElement('div'), bus, templateId); // Вызов конструктора BaseComponent
-    
-    // Теперь используем this для доступа к защищенному методу cloneTemplate
-    const root = this.cloneTemplate<HTMLElement>(templateId);
+  constructor(bus: EventBus) {
+    super(document.createElement('div'), bus);
+    this.el.className = 'form';
 
-    this.form = root.querySelector('.form') as HTMLFormElement;
-    this.submitButton = this.form.querySelector<HTMLButtonElement>('.order__button')!;
-    this.errorBox = this.form.querySelector<HTMLElement>('.form__errors')!;
+    const paymentOptions = this.createElement('div', 'payment-options');
+    const btnCard = this.createElement('button', '', paymentOptions);
+    const btnCash = this.createElement('button', '', paymentOptions);
+    const addressInput = this.createElement('input', '', this.el);
+    const errorBox = this.createElement('p', 'form__errors');
+    this.submitButton = this.createElement('button', 'order__button');
 
-    const btnCard = this.form.querySelector<HTMLButtonElement>('button[name="card"]')!;
-    const btnCash = this.form.querySelector<HTMLButtonElement>('button[name="cash"]')!;
-    const address = this.form.querySelector<HTMLInputElement>('input[name="address"]')!;
+    btnCard.type = 'button';
+    btnCard.name = 'card';
+    btnCard.textContent = 'Онлайн';
+    btnCash.type = 'button';
+    btnCash.name = 'cash';
+    btnCash.textContent = 'При получении';
+    addressInput.type = 'text';
+    addressInput.name = 'address';
+    addressInput.placeholder = 'Адрес доставки';
+    this.submitButton.type = 'submit';
+    this.submitButton.textContent = 'Далее';
+    this.submitButton.disabled = true;
+    this.errorBox = errorBox;
 
-    btnCard.addEventListener('click', () => { this.payment = 'card'; validate(); });
-    btnCash.addEventListener('click', () => { this.payment = 'cash'; validate(); });
-    address.addEventListener('input', () => { this.address = address.value.trim(); validate(); });
+    btnCard.addEventListener('click', () => { this.payment = 'card'; this.validate(); });
+    btnCash.addEventListener('click', () => { this.payment = 'cash'; this.validate(); });
+    addressInput.addEventListener('input', () => { this.address = addressInput.value.trim(); this.validate(); });
 
-    const validate = () => {
-      const ok = !!this.payment && this.address.length > 4;
-      this.setSubmitEnabled(ok);
-      this.setError(ok ? '' : 'Выберите способ оплаты и введите адрес');
-    };
+    this.el.append(paymentOptions, addressInput, errorBox, this.submitButton);
+    this.validate();
+  }
 
-    this.form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      if (!this.payment) return;
-      this.bus.emit('order:contacts', { address: this.address, payment: this.payment });
-      // Если вам нужно делать что-то при отправке, добавьте здесь нужный код
-    });
+  protected validate() {
+    const ok = !!this.payment && this.address.length > 4;
+    this.setSubmitEnabled(ok);
+    this.setError(ok ? '' : 'Выберите способ оплаты и введите адрес');
+  }
+
+  getData() {
+    return { address: this.address, payment: this.payment || 'cash' };
   }
 }

@@ -3573,8 +3573,10 @@ html-minifier-terser@^6.0.2:
     relateurl "^0.2.7"
     terser "^5.10.0"
 
-html-webpack-plugin@^5.5.1:
-  version "5.5.1"
+html-webpack-plugin@^5.6.4:
+  version "5.6.4"
+  resolved "https://registry.npmjs.org/html-webpack-plugin/-/html-webpack-plugin-5.6.4.tgz"
+  integrity sha512-V/PZeWsqhfpE27nKeX9EO2sbR+D17A+tLf6qU+ht66jdUsN0QLKJN27Z+1+gHrVMKgndBahes0PU6rRihDgHTw==
   dependencies:
     "@types/html-minifier-terser" "^6.0.0"
     html-minifier-terser "^6.0.2"
@@ -6709,7 +6711,7 @@ webpack-cli@^4.10.0, webpack-cli@4.x.x:
     rechoir "^0.7.0"
     webpack-merge "^5.7.3"
 
-webpack-cli@^5.0.2, webpack-cli@5.x.x:
+webpack-cli@^5.1.4, webpack-cli@5.x.x:
   version "5.1.4"
   resolved "https://registry.npmjs.org/webpack-cli/-/webpack-cli-5.1.4.tgz"
   integrity sha512-pIDJHIEI9LR0yxHXQ+Qh95k2EvXpWzZ5l+d+jIo+RdSm9MiHfzazIxwwni/p7+x4eJZuvG1AJwgC4TNQ7NRgsg==
@@ -6785,7 +6787,7 @@ webpack-sources@^3.3.3:
   resolved "https://registry.npmjs.org/webpack-sources/-/webpack-sources-3.3.3.tgz"
   integrity sha512-yd1RBzSGanHkitROoPFd6qsrxt+oFhg/129YzheDGqeustzX0vTZJZsSsQjVQC4yzBQ56K55XU8gaNCtIzOnTg==
 
-webpack@^5.0.0, webpack@^5.1.0, webpack@^5.20.0, webpack@^5.81.0, webpack@>=5, "webpack@4.x.x || 5.x.x", webpack@5.x.x:
+webpack@^5.0.0, webpack@^5.1.0, webpack@^5.101.2, webpack@^5.20.0, webpack@>=5, "webpack@4.x.x || 5.x.x", webpack@5.x.x:
   version "5.101.2"
   resolved "https://registry.npmjs.org/webpack/-/webpack-5.101.2.tgz"
   integrity sha512-4JLXU0tD6OZNVqlwzm3HGEhAHufSiyv+skb7q0d2367VDMzrU1Q/ZeepvkcHH0rZie6uqEtTQQe0OEOOluH3Mg==

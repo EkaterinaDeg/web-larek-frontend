@@ -1,40 +1,51 @@
-import type { ApiProduct } from '../types';
+import type { ApiProduct, IBasketModel } from '../types/type';
 import { EventBus } from '../base/EventBus';
+import { ProductModel } from './ProductModel';
 
-export class BasketModel {
-  [x: string]: any;
-  items: string[] = [];
+export class BasketModel implements IBasketModel {
+  items: Map<string, number> = new Map();
+  events: EventBus;
 
-  constructor(private bus: EventBus) {}
-
-  add(id: string, products: ApiProduct[]) {
-    if (!this.items.includes(id)) {
-      this.items.push(id);
-      this.emitChange(products);
-    }
+  constructor(events: EventBus, private productModel: ProductModel) {
+    this.events = events;
   }
 
-  remove(id: string, products: ApiProduct[]) {
-    this.items = this.items.filter((x) => x !== id);
-    this.emitChange(products);
+  add(id: string) {
+    const current = this.items.get(id) || 0;
+    this.items.set(id, current + 1);
+    this.emitChange();
   }
 
-  clear(products: ApiProduct[]) {
-    this.items = [];
-    this.emitChange(products);
+  remove(id: string) {
+    this.items.delete(id);
+    this.emitChange();
   }
 
-  getTotal(products: ApiProduct[]): number {
-    return this.items.reduce((sum, id) => {
-      const p = products.find((x) => x.id === id);
-      return sum + (p?.price ?? 0);
+  clear() {
+    this.items.clear();
+    this.emitChange();
+  }
+
+  getItems(): { product: ApiProduct; quantity: number }[] {
+    const result: { product: ApiProduct; quantity: number }[] = [];
+    this.items.forEach((quantity, id) => {
+      const product = this.productModel.getProduct(id);
+      if (product) result.push({ product, quantity });
+    });
+    return result;
+  }
+
+  getTotal(): number {
+    return Array.from(this.items.entries()).reduce((sum, [id, quantity]) => {
+      const p = this.productModel.getProduct(id);
+      return sum + (p?.price ?? 0) * quantity;
     }, 0);
   }
 
-  private emitChange(products: ApiProduct[]) {
-    this.bus.emit('basket:changed', {
-      items: this.items.slice(),
-      total: this.getTotal(products),
+  private emitChange() {
+    this.events.emit('basket:changed', {
+      items: Array.from(this.items.keys()),
+      total: this.getTotal(),
     });
   }
 }

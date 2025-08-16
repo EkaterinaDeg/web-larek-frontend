@@ -1,3 +1,5 @@
+import { EventBus } from '../base/EventBus';
+
 // ===== 1. Данные API =====
 export interface ApiProduct {
   id: string;
@@ -8,12 +10,17 @@ export interface ApiProduct {
 }
 
 export interface ApiOrder {
-  payment: 'online' | 'cash';
+  payment: 'online' | 'cash' | 'card';
   email: string;
   phone: string;
   address: string;
   total: number;
   items: string[];
+}
+
+export interface IApiClient {
+  get<T>(endpoint: string): Promise<T>;
+  post<T>(endpoint: string, data: object): Promise<T>;
 }
 
 export interface IUserContacts {
@@ -26,9 +33,14 @@ export interface ApiOrderResponse {
   total: number;
 }
 
+// ===== 2. Представление продуктов (UI) =====
+export interface ViewProduct extends ApiProduct {
+  inBasket: boolean; // Дополнительное поле для UI
+}
+
 // ===== 2. Модели =====
 export interface IModel {
-  events: IEventEmitter;
+  events: EventBus; // Используем класс EventBus
 }
 
 export interface IProductModel extends IModel {
@@ -49,6 +61,9 @@ export interface IBasketModel extends IModel {
 export interface IOrderModel extends IModel {
   order: ApiOrder | null;
   setOrder(order: ApiOrder): void;
+  setAddress(address: string): void;
+  setPayment(payment: 'online' | 'cash' | 'card'): void;
+  setItems(items: string[]): void;
 }
 
 // ===== 3. UI-компоненты =====
@@ -81,39 +96,4 @@ export interface IOrderSuccessView {
 }
 
 // ===== 4. События =====
-export enum AppEvent {
-  PRODUCTS_LOADED = 'products:loaded',
-  ADD_TO_BASKET = 'basket:add',
-  REMOVE_FROM_BASKET = 'basket:remove',
-  OPEN_BASKET = 'basket:open',
-  OPEN_ORDER_FORM = 'order:form:open',
-  OPEN_CONTACTS_FORM = 'order:contacts:open',
-  ORDER_SUCCESS = 'order:success'
-}
-
-export interface IEventPayloads {
-  [AppEvent.PRODUCTS_LOADED]: ApiProduct[];
-  [AppEvent.ADD_TO_BASKET]: string;
-  [AppEvent.REMOVE_FROM_BASKET]: string;
-  [AppEvent.ORDER_SUCCESS]: string;
-}
-
-// ===== 5. Событийная система =====
-export interface IEventEmitter {
-  on<T extends keyof IEventPayloads>(event: T, listener: (payload: IEventPayloads[T]) => void): void;
-  emit<T extends keyof IEventPayloads>(event: T, payload: IEventPayloads[T]): void;
-}
-
-// ===== 6. API клиент =====
-export interface IApiClient {
-  get<T>(endpoint: string): Promise<T>;
-  post<T>(endpoint: string, data: object): Promise<T>;
-}
-
-export interface ViewProduct {
-  id: string;
-  title: string;
-  price: number;
-  image: string;
-  inBasket: boolean;
-}
+export { AppEvent, IEventPayloads } from '../events';

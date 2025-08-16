@@ -1,10 +1,10 @@
 // src/utils/EventBus.ts
-import type { AppEvent, IEventPayloads } from './events';
+import type { AppEvent, IEventPayloads } from '../events';
 
 type Handler<K extends AppEvent> = (payload: IEventPayloads[K]) => void;
 
 export class EventBus {
-  private listeners = new Map<AppEvent, Set<Function>>();
+  private listeners = new Map<AppEvent, Set<Handler<any>>>();
 
   on<K extends AppEvent>(event: K, handler: Handler<K>): () => void {
     if (!this.listeners.has(event)) this.listeners.set(event, new Set());
@@ -13,11 +13,18 @@ export class EventBus {
   }
 
   off<K extends AppEvent>(event: K, handler: Handler<K>) {
-    this.listeners.get(event)?.delete(handler);
+    const handlers = this.listeners.get(event);
+    if (handlers) {
+      handlers.delete(handler);
+      if (handlers.size === 0) this.listeners.delete(event);
+    }
   }
 
   emit<K extends AppEvent>(event: K, payload: IEventPayloads[K]) {
-    this.listeners.get(event)?.forEach((h) => (h as Handler<K>)(payload));
+    const handlers = this.listeners.get(event);
+    if (handlers) {
+      handlers.forEach((handler) => handler(payload));
+    }
   }
 
   clear() {

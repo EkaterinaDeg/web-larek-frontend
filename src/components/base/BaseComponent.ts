@@ -3,12 +3,10 @@ import { EventBus } from './EventBus';
 export class BaseComponent<T = unknown> {
   protected el: HTMLElement;
   protected bus: EventBus;
-  templateId: string;
 
-  constructor(container: HTMLElement, bus: EventBus, templateId: string) {
-    this.el = templateId ? this.cloneTemplate(templateId): container;
+  constructor(container: HTMLElement, bus: EventBus) {
+    this.el = container;
     this.bus = bus;
-    this.templateId = templateId;
   }
 
   render(_: T | void): HTMLElement {
@@ -23,34 +21,60 @@ export class BaseComponent<T = unknown> {
     this.el.classList.add('hidden');
   }
 
-  protected setText(selector: string, value: string ) {
-    const n = this.el.querySelector<HTMLElement>(selector);
-    if (n) n.textContent = value;
-  }
-
-  protected setInputValue(selector: string, value: string) {
-    const n = this.el.querySelector<HTMLInputElement>(selector);
-    if (n) n.value = value;
-  }
-
-  protected setDisabled(selector: string, disabled: boolean) {
-    const n = this.el.querySelector<HTMLButtonElement>(selector);
-    if (n) n.disabled = disabled;
-  }
-
-  protected setImage(selector: string, src: string, alt?: string) {
-    const n = this.el.querySelector<HTMLImageElement>(selector);
-    if (n) {
-      n.src = src;
-      if (alt) n.alt = alt;
+  protected setText(selector: string, value: string): boolean {
+    const node = this.el.querySelector<HTMLElement>(selector);
+    if (node) {
+      node.textContent = value;
+      return true;
     }
+    return false;
   }
 
-  // Удобный доступ к шаблонам из HTML
-  protected cloneTemplate<T extends HTMLElement = HTMLElement>(id: string): T {
-    const tpl = document.getElementById(id) as HTMLTemplateElement | null;
-    if (!tpl) throw new Error(`Template #${id} not found`);
-    return tpl.content.firstElementChild!.cloneNode(true) as T;
+  protected setInputValue(selector: string, value: string): boolean {
+    const node = this.el.querySelector<HTMLInputElement>(selector);
+    if (node) {
+      node.value = value;
+      return true;
+    }
+    return false;
   }
+
+  protected setDisabled(selector: string, disabled: boolean): boolean {
+    const node = this.el.querySelector<HTMLButtonElement>(selector);
+    if (node) {
+      node.disabled = disabled;
+      return true;
+    }
+    return false;
+  }
+
+  protected setImage(selector: string, src: string, alt?: string): boolean {
+    const node = this.el.querySelector<HTMLImageElement>(selector);
+    if (node) {
+      node.src = src;
+      if (alt) node.alt = alt;
+      return true;
+    }
+    return false;
+  }
+
+  protected createElement<K extends keyof HTMLElementTagNameMap>(
+    tag: K,
+    className?: string,
+    parent?: HTMLElement
+  ): HTMLElementTagNameMap[K] {
+    const element = document.createElement(tag);
+    if (className) element.className = className;
+    if (parent) parent.appendChild(element);
+    return element;
+  }
+
+  protected cloneTemplate<T extends HTMLElement>(id: string): T {
+  const tpl = document.getElementById(id) as HTMLTemplateElement;
+  if (!tpl) {
+    throw new Error(`Template with id ${id} not found`);
+  }
+  return tpl.content.firstElementChild!.cloneNode(true) as T;
+  }
+
 }
-
