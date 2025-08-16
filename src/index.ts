@@ -14,11 +14,13 @@ import { ContactsFormView } from './components/views/ContactsFormView';
 import { OrderSuccessView } from './components/views/OrderSuccessView';
 import { ApiProduct, ApiOrder, ApiOrderResponse } from './components/types/type';
 import { showError } from './components/views/ErrorView';
+import { API_URL } from './utils/constants';
+import { CDN_URL } from './utils/constants';
 
 // Инициализация
 const appContainer = document.querySelector('.gallery') as HTMLElement;
 const events = new EventBus();
-const api = new Api('http://localhost:8080');
+const api = new Api(API_URL);
 const productModel = new ProductModel(api, events);
 const basketModel = new BasketModel(events, productModel);
 const orderModel = new OrderModel(events);
