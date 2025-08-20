@@ -1,20 +1,71 @@
-import { BaseComponent } from '../base/BaseComponent';
+// Файл: /src/views/Form.ts
 
-export class FormView<T> extends BaseComponent<T> {
-  protected form!: HTMLFormElement;
-  protected submitButton!: HTMLButtonElement;
-  protected errorBox!: HTMLElement;
+/**
+ * Модуль предоставляет базовый класс `Form` для форм приложения.
+ */
 
-  render(data?: T) {
-    // форма уже создана в наследниках — здесь просто возвращаем контейнер
-    return super.render(data);
+import { EventEmitter } from '../base/EventBus';
+
+/**
+ * Базовый класс `Form` для всех форм приложения.
+ */
+export abstract class Form {
+  protected emitter: EventEmitter;
+  protected currentForm: HTMLFormElement | null = null;
+  protected submitButton: HTMLButtonElement | null = null;
+
+  /**
+   * Создает экземпляр класса `Form`.
+   * @param emitter - Экземпляр EventEmitter для событийного взаимодействия.
+   */
+  constructor(emitter: EventEmitter) {
+    this.emitter = emitter;
   }
 
-  protected setError(msg: string) {
-    if (this.errorBox) this.errorBox.textContent = msg;
+  /**
+   * Возвращает элемент формы для отображения.
+   * @returns Элемент формы.
+   */
+  getForm(): HTMLElement {
+    this.currentForm = this.createForm();
+    this.submitButton = this.currentForm.querySelector(
+      '.modal__actions .button'
+    ) as HTMLButtonElement;
+    this.setupForm();
+    return this.currentForm;
   }
 
-  protected setSubmitEnabled(enabled: boolean) {
-    if (this.submitButton) this.submitButton.disabled = !enabled;
+  /**
+   * Валидирует форму.
+   * @returns `true`, если форма валидна.
+   */
+  validateForm(): boolean {
+    return true; // Реализуется в дочерних классах
   }
+
+  /**
+   * Устанавливает состояние кнопки отправки.
+   * @param isValid - Валидна ли форма.
+   */
+  setSubmitButtonState(isValid: boolean): void {
+    if (this.submitButton) {
+      this.submitButton.disabled = !isValid;
+    }
+  }
+
+  /**
+   * Создает форму из шаблона.
+   * @returns Элемент формы.
+   */
+  protected abstract createForm(): HTMLFormElement;
+
+  /**
+   * Настраивает форму: добавляет обработчики и валидацию.
+   */
+  protected abstract setupForm(): void;
+
+  /**
+   * Обработчик отправки формы.
+   */
+  protected abstract onSubmit(): void;
 }

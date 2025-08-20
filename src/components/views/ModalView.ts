@@ -1,47 +1,82 @@
-import { BaseComponent } from '../base/BaseComponent';
-import { EventBus } from '../base/EventBus';
+// Файл: /src/views/Modal.ts
 
-export class ModalView extends BaseComponent {
-  private contentEl: HTMLElement;
-  private closeBtn: HTMLButtonElement;
+/**
+ * Модуль предоставляет класс `Modal` для управления модальным окном.
+ */
 
-  constructor(container: HTMLElement, bus: EventBus) {
-    super(container, bus);
-    this.el.className = 'modal';
+import { EventEmitter } from '../base/EventBus';
 
-    this.contentEl = this.createElement('div', 'modal__content');
-    this.closeBtn = this.createElement('button', 'modal__close');
-    this.closeBtn.textContent = 'Закрыть';
+/**
+ * Класс Modal отвечает за управление модальным окном.
+ */
+export class Modal {
+  private modalElement: HTMLElement;
+  private closeButton: HTMLElement | null;
+  private contentContainer: HTMLElement | null;
+  private emitter: EventEmitter;
+  private contentType: string | null = null;
 
-    this.el.append(this.contentEl, this.closeBtn);
+  constructor(modalElement: HTMLElement, emitter: EventEmitter) {
+    this.modalElement = modalElement;
+    this.emitter = emitter;
 
-    this.closeBtn.addEventListener('click', () => this.bus.emit('modal:close', undefined));
-    this.el.addEventListener('click', (e) => {
-      if (e.target === this.el) this.bus.emit('modal:close', undefined);
+    // Сохраняем ссылки на элементы
+    this.closeButton = this.modalElement.querySelector('.modal__close');
+    this.contentContainer = this.modalElement.querySelector('.modal__content');
+
+    // Навешиваем обработчики событий
+    this.initEventListeners();
+  }
+
+  private initEventListeners(): void {
+    // Обработчик кнопки закрытия
+    if (this.closeButton) {
+      this.closeButton.addEventListener('click', () => this.close());
+    }
+
+    // Обработчик клика на фон модального окна
+    this.modalElement.addEventListener('click', (event) => {
+      if (event.target === this.modalElement) {
+        this.close();
+      }
     });
 
-    this.bus.on('modal:open', ({ content }: { content: HTMLElement }) => {
-      this.setContent(content);
-      this.show();
-    });
-    this.bus.on('modal:close', () => this.hide());
+    // Обработчик закрытия по клавише ESC
+    document.addEventListener('keydown', this.handleEscapeKey);
   }
 
-  open(content: HTMLElement): void {
-  this.el.innerHTML = '';
-  this.el.appendChild(content);
-  this.el.classList.add('modal--open');
+  private handleEscapeKey = (event: KeyboardEvent): void => {
+    if (event.key === 'Escape' && this.isOpen()) {
+      this.close();
+    }
+  };
+
+  open(): void {
+    this.modalElement.classList.add('modal_active');
+    document.body.classList.add('modal-open');
   }
 
-  setContent(content: HTMLElement) {
-    this.contentEl.replaceChildren(content);
+  close(): void {
+    this.modalElement.classList.remove('modal_active');
+    document.body.classList.remove('modal-open');
+    this.contentType = null;
   }
 
-  show() {
-    this.el.classList.add('modal_active');
+  setContent(content: HTMLElement, contentType?: string): void {
+    if (this.contentContainer) {
+      this.contentContainer.innerHTML = '';
+      this.contentContainer.appendChild(content);
+    }
+    if (contentType) {
+      this.contentType = contentType;
+    }
   }
 
-  hide() {
-    this.el.classList.remove('modal_active');
+  isOpen(): boolean {
+    return this.modalElement.classList.contains('modal_active');
+  }
+
+  getContentType(): string | null {
+    return this.contentType;
   }
 }

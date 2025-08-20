@@ -1,31 +1,50 @@
-import type { ApiProduct, IProductModel } from '../types/type';
-import { EventBus } from '../base/EventBus';
-import { IApiClient } from '../types/type'; // Используем интерфейс
+// Файл: /src/models/ProductModel.ts
 
-export class ProductModel implements IProductModel {
-  products: ApiProduct[] = [];
-  events: EventBus;
+/**
+ * Модуль предоставляет класс `ProductModel` для управления данными о товарах.
+ */
 
-  constructor(private api: IApiClient, private bus: EventBus) {
-    this.events = bus;
-    this.bus.on('products:load', () => this.load());
+import { EventEmitter } from '../base/EventBus';
+import { Product } from '../types';
+
+/**
+ * Класс `ProductModel` хранит и управляет данными о товарах.
+ */
+export class ProductModel {
+  private emitter: EventEmitter;
+  private products: Product[] = [];
+
+  /**
+   * Создает экземпляр класса `ProductModel`.
+   * @param emitter - Экземпляр EventEmitter для событийного взаимодействия.
+   */
+  constructor(emitter: EventEmitter) {
+    this.emitter = emitter;
   }
 
-  async load() {
-    try {
-      const response = await this.api.get<ApiProduct[]>('/products'); // Используем get
-      this.setProducts(response);
-      this.bus.emit('products:loaded', { products: response });
-    } catch (err) {
-      this.bus.emit('ui:error', { message: 'Ошибка загрузки товаров' });
-    }
-  }
-
-  setProducts(products: ApiProduct[]) {
+  /**
+   * Устанавливает список товаров.
+   * @param products - Массив товаров.
+   */
+  setProducts(products: Product[]): void {
     this.products = products;
+    this.emitter.emit('productsUpdated', this.products);
   }
 
-  getProduct(id: string) {
-    return this.products.find((p) => p.id === id);
+  /**
+   * Возвращает товар по его ID.
+   * @param id - Идентификатор товара.
+   * @returns Товар или `undefined`, если не найден.
+   */
+  getProductById(id: string): Product | undefined {
+    return this.products.find((product) => product.id === id);
+  }
+
+  /**
+   * Возвращает список всех товаров.
+   * @returns Массив товаров.
+   */
+  getProducts(): Product[] {
+    return this.products;
   }
 }

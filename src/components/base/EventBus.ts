@@ -1,33 +1,105 @@
-// src/utils/EventBus.ts
-import type { AppEvent, IEventPayloads } from '../events';
+// Файл: /src/components/base/events.ts
 
-type Handler<K extends AppEvent> = (payload: IEventPayloads[K]) => void;
+/**
+ * Модуль предоставляет класс `EventEmitter` для реализации паттерна "издатель-подписчик".
+ */
 
-export class EventBus {
-  private listeners = new Map<AppEvent, Set<Handler<any>>>();
+type EventName = string | RegExp;
+type Subscriber<T> = (data: T) => void;
+type EmitterEvent = {
+  eventName: string;
+  data: unknown;
+};
 
-  on<K extends AppEvent>(event: K, handler: Handler<K>): () => void {
-    if (!this.listeners.has(event)) this.listeners.set(event, new Set());
-    this.listeners.get(event)!.add(handler);
-    return () => this.off(event, handler);
+/**
+ * Интерфейс для управления событиями.
+ */
+export interface IEvents {
+  on<T = unknown>(event: EventName, callback: Subscriber<T>): void;
+  emit<T = unknown>(event: string, data?: T): void;
+  trigger<T = unknown>(event: string, context?: Partial<T>): (data: T) => void;
+}
+
+/**
+ * Класс `EventEmitter` реализует механизм событийного взаимодействия между компонентами.
+ */
+export class EventEmitter implements IEvents {
+  private _events: Map<EventName, Set<Function>>;
+
+  constructor() {
+    this._events = new Map<EventName, Set<Function>>();
   }
 
-  off<K extends AppEvent>(event: K, handler: Handler<K>) {
-    const handlers = this.listeners.get(event);
-    if (handlers) {
-      handlers.delete(handler);
-      if (handlers.size === 0) this.listeners.delete(event);
+  /**
+   * Добавляет обработчик для указанного события.
+   * @param eventName - Имя или шаблон события.
+   * @param callback - Функция-обработчик.
+   */
+  on<T = unknown>(eventName: EventName, callback: Subscriber<T>): void {
+    if (!this._events.has(eventName)) {
+      this._events.set(eventName, new Set<Function>());
+    }
+    this._events.get(eventName)?.add(callback);
+  }
+
+  /**
+   * Удаляет обработчик для указанного события.
+   * @param eventName - Имя или шаблон события.
+   * @param callback - Функция-обработчик.
+   */
+  off(eventName: EventName, callback: Function): void {
+    if (this._events.has(eventName)) {
+      this._events.get(eventName)?.delete(callback);
+      if (this._events.get(eventName)?.size === 0) {
+        this._events.delete(eventName);
+      }
     }
   }
 
-  emit<K extends AppEvent>(event: K, payload: IEventPayloads[K]) {
-    const handlers = this.listeners.get(event);
-    if (handlers) {
-      handlers.forEach((handler) => handler(payload));
-    }
+  /**
+   * Вызывает событие с переданными данными.
+   * @param eventName - Имя события.
+   * @param data - Данные для передачи обработчикам.
+   */
+  emit<T = unknown>(eventName: string, data?: T): void {
+    this._events.forEach((subscribers, name) => {
+      if (
+        name === '*' ||
+        (name instanceof RegExp && name.test(eventName)) ||
+        name === eventName
+      ) {
+        subscribers.forEach((callback) => callback(data));
+      }
+    });
   }
 
-  clear() {
-    this.listeners.clear();
+  /**
+   * Добавляет обработчик для всех событий.
+   * @param callback - Функция-обработчик.
+   */
+  onAll(callback: (event: EmitterEvent) => void): void {
+    this.on('*', callback);
+  }
+
+  /**
+   * Сбрасывает все обработчики событий.
+   */
+  offAll(): void {
+    this._events = new Map<EventName, Set<Function>>();
+  }
+
+  /**
+   * Создает триггер для автоматического вызова события.
+   * @param eventName - Имя события.
+   * @param context - Дополнительный контекст данных.
+   * @returns Функцию для вызова события.
+   */
+  trigger<T = unknown>(
+    eventName: string,
+    context?: Partial<T>
+  ): (data: T) => void {
+    return (data: T) => {
+      this.emit(eventName, { ...data, ...context });
+    };
   }
 }

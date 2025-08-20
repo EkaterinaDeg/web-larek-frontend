@@ -1,52 +1,145 @@
-import { FormView } from './FormView';
-import { EventBus } from '../base/EventBus';
+// Файл: /src/views/OrderForm.ts
 
-export type Payment = 'card' | 'cash';
+/**
+ * Модуль предоставляет класс `OrderForm` для обработки формы заказа.
+ */
 
-export class OrderFormView extends FormView<unknown> {
-  private payment: Payment | null = null;
-  private address = '';
+import { Form } from './FormView';
+import { EventEmitter } from '../base/EventBus';
+import { PaymentMethod } from '../types';
+import { FormValidator } from '../utils/FormValidator';
+import { validateAddress, validatePaymentMethod } from '../utils/validators';
 
-  constructor(bus: EventBus) {
-    super(document.createElement('div'), bus);
-    this.el.className = 'form';
+/**
+ * Класс `OrderForm` отвечает за отображение и валидацию формы заказа.
+ */
+export class OrderForm extends Form {
+  private orderTemplate: HTMLTemplateElement;
+  private formValidator: FormValidator;
 
-    const paymentOptions = this.createElement('div', 'payment-options');
-    const btnCard = this.createElement('button', '', paymentOptions);
-    const btnCash = this.createElement('button', '', paymentOptions);
-    const addressInput = this.createElement('input', '', this.el);
-    const errorBox = this.createElement('p', 'form__errors');
-    this.submitButton = this.createElement('button', 'order__button');
-
-    btnCard.type = 'button';
-    btnCard.name = 'card';
-    btnCard.textContent = 'Онлайн';
-    btnCash.type = 'button';
-    btnCash.name = 'cash';
-    btnCash.textContent = 'При получении';
-    addressInput.type = 'text';
-    addressInput.name = 'address';
-    addressInput.placeholder = 'Адрес доставки';
-    this.submitButton.type = 'submit';
-    this.submitButton.textContent = 'Далее';
-    this.submitButton.disabled = true;
-    this.errorBox = errorBox;
-
-    btnCard.addEventListener('click', () => { this.payment = 'card'; this.validate(); });
-    btnCash.addEventListener('click', () => { this.payment = 'cash'; this.validate(); });
-    addressInput.addEventListener('input', () => { this.address = addressInput.value.trim(); this.validate(); });
-
-    this.el.append(paymentOptions, addressInput, errorBox, this.submitButton);
-    this.validate();
+  /**
+   * Создает экземпляр класса `OrderForm`.
+   * @param emitter - Экземпляр EventEmitter для событийного взаимодействия.
+   */
+  constructor(emitter: EventEmitter) {
+    super(emitter);
+    this.orderTemplate = document.getElementById('order') as HTMLTemplateElement;
+    if (!this.orderTemplate) {
+      throw new Error('Template #order not found');
+    }
   }
 
-  protected validate() {
-    const ok = !!this.payment && this.address.length > 4;
-    this.setSubmitEnabled(ok);
-    this.setError(ok ? '' : 'Выберите способ оплаты и введите адрес');
+  /**
+   * Создает форму заказа из шаблона.
+   * @returns Элемент формы.
+   */
+  protected createForm(): HTMLFormElement {
+    const form = this.orderTemplate.content.firstElementChild!.cloneNode(
+      true
+    ) as HTMLFormElement;
+    this.currentForm = form;
+    return form;
   }
 
-  getData() {
-    return { address: this.address, payment: this.payment || 'cash' };
+  /**
+   * Настраивает форму: добавляет обработчики и валидацию.
+   */
+  protected setupForm(): void {
+    if (!this.currentForm) return;
+
+    this.formValidator = new FormValidator(this.currentForm);
+
+    const paymentButtons = this.currentForm.querySelectorAll('.order__buttons .button');
+    const addressInput = this.currentForm.querySelector(
+      'input[name="address"]'
+    ) as HTMLInputElement;
+    const submitButton = this.currentForm.querySelector(
+      '.modal__actions .button'
+    ) as HTMLButtonElement;
+
+    addressInput.required = true;
+
+    paymentButtons.forEach((button) => {
+      button.addEventListener('click', (event) => {
+        event.preventDefault();
+        paymentButtons.forEach((btn) => btn.classList.remove('button_selected'));
+        button.classList.add('button_selected');
+        this.validateForm();
+      });
+    });
+
+    addressInput.addEventListener('input', () => {
+      this.validateForm();
+    });
+
+    submitButton.addEventListener('click', (event) => {
+      event.preventDefault();
+      if (this.validateForm()) {
+        this.onSubmit();
+      }
+    });
+  }
+
+  /**
+   * Валидирует форму заказа и отображает ошибки.
+   * @returns `true`, если форма валидна, иначе `false`.
+   */
+  validateForm(): boolean {
+    if (!this.currentForm) return false;
+
+    const isValid = this.formValidator.validate();
+    this.setSubmitButtonState(isValid);
+
+    const paymentSelected = this.currentForm.querySelector('.button_selected')
+      ?.textContent || null;
+    const addressInput = this.currentForm.querySelector(
+      'input[name="address"]'
+    ) as HTMLInputElement;
+    const errorsElement = this.currentForm.querySelector('.form__errors') as HTMLElement;
+
+    let errors = '';
+
+    // Валидация способа оплаты
+    const paymentError = validatePaymentMethod(paymentSelected);
+    if (paymentError) {
+      errors += paymentError + '<br>';
+    }
+
+    // Валидация адреса
+    const addressError = validateAddress(addressInput.value);
+    if (addressError) {
+      errors += addressError + '<br>';
+      addressInput.classList.add('input_error');
+    } else {
+      addressInput.classList.remove('input_error');
+    }
+
+    // Отображение ошибок
+    if (errorsElement) {
+      errorsElement.innerHTML = errors;
+    }
+
+    return isValid && errors === '';
+  }
+
+  /**
+   * Обработчик отправки формы заказа.
+   */
+  protected onSubmit(): void {
+    const paymentText = this.currentForm?.querySelector('.button_selected')
+      ?.textContent || '';
+    let paymentMethod: PaymentMethod = 'cash';
+
+    if (paymentText === 'Онлайн') {
+      paymentMethod = 'online';
+    } else if (paymentText === 'При получении') {
+      paymentMethod = 'cash';
+    }
+
+    const address = (this.currentForm.querySelector(
+      'input[name="address"]'
+    ) as HTMLInputElement).value.trim();
+
+    this.emitter.emit('orderStepCompleted', { payment: paymentMethod, address });
   }
 }

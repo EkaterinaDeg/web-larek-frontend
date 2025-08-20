@@ -45,431 +45,247 @@ yarn build
 
 Приложение реализовано по паттерну **MVC (Model–View–Controller)** с использованием событийной системы:
 
-- **Model** — хранение и управление данными (`ProductModel`, `BasketModel`, `OrderModel`, `UserModel`)
-- **View** — визуализация данных и обновление UI (`CardView`, `PageView`, `ModalView`, `BasketView`, `FormView` и др.)
+- **Model** — хранение и управление данными (`ProductModel`, `BasketModel`)
+- **View** — визуализация данных (`ProductListView`, `ProductDetailView`, `CardView`, `BasketView`, `ModalView`, `FormView`, `OrderFormView`, `ContactsFormView`)
 - **Controller** — управление логикой приложения (организовано через подписку на события)
+- **API слой** — `Api`, `APIClientImpl`, `ProductService`
 
-**Взаимодействие** происходит через централизованную событийную систему (AppEvent и IEventPayloads), что обеспечивает отделение бизнес-логики от UI и упрощает расширяемость.
+**Взаимодействие** Все взаимодействие строится через события: пользователь → событие → модель → обновление View.
 
-Контроллер реализован через подписку на события из централизованного EventBus. Он обрабатывает пользовательские действия, обновляет модели и инициирует обновление представлений.
-
-**Пример подписки на событие:**
-```
-eventBus.on('product:add', (payload: { id: string }) => {
-  basketModel.add(payload.id);
-  basketView.render(basketModel.items);
-});
-```
-### Пример взаимодействия:
-
-Пользователь нажимает кнопку "Купить" → происходит событие `product:add` → контроллер обрабатывает событие и обновляет `BasketModel` → модель инициирует событие → `BasketView` обновляется.
+Контроллер реализован через подписку на события из централизованного **EventBus**. Он обрабатывает пользовательские действия, обновляет модели и инициирует обновление представлений.
 
 ---
 
-## Описание ключевых компонентов и классов 
+## Классы и компоненты 
 
-### Api
+### Base
+`Api`
 
-Базовый HTTP-клиент для взаимодействия с сервером.
+Базовый HTTP-клиент.
+##### Методы:
 
-```
-class Api {
-  constructor(baseUrl: string, options: RequestInit = {});
-  get<T>(uri: string): Promise<T>;
-  post<T>(uri: string, data: object, method?: ApiPostMethods): Promise<T>;
-}
-```
+`get(uri: string)` — GET-запрос
 
-**Конструктор:**  
-`constructor(baseUrl: string, options: RequestInit = {})`
+`post(uri: string, data: object, method?: ApiPostMethods)` — POST/PUT/DELETE
 
-`baseUrl` — базовый URL API.
-`options` — глобальные опции для запросов (заголовки и т.п.).
+`EventBus` (`EventBus.ts`)
 
-**Методы:**
-```
-get<T>(uri: string): Promise<T>;
-post<T>(uri: string, data: object, method?: ApiPostMethods): Promise<T>;
-```
+Реализация паттерна "издатель–подписчик".
+##### Методы:
 
-`get` — GET-запрос по URI.
-`post` — POST/PUT/DELETE-запрос с данными.
+`on(event, callback)` — подписка
 
----
+`emit(event, data?)` — генерация события
 
-### ProductModel
+`off(event, callback)` — отписка
 
-```
-class ProductModel {
-  constructor(products: ApiProduct[]);
-  getProductById(id: string): ApiProduct | undefined;
-}
-```
+`onAll(callback)` — подписка на все события
 
-**Конструктор:**  
-`constructor(products: ApiProduct[])` — принимает список товаров с API.
+`offAll()` — очистка
 
-`products` — массив товаров с сервера.
+### API слой
+`APIClientImpl`
 
-**Свойства:**
+Реализация интерфейса `APIClient`.
+##### Методы:
 
-`products: ApiProduct[]` — текущий список товаров.
+`getProducts(): Promise<ProductList>`
 
-**Методы:**
-```
-getProductById(id: string): ApiProduct | undefined
-```
-Возвращает товар по `id` или `undefined`, если не найден.
+`getProduct(id: string): Promise<Product>`
 
----
+`createOrder(order: Order): Promise<OrderResponse>`
 
-### BasketModel
+`ProductService`
 
-```
-class BasketModel {
-  constructor(items: string[]);
-  add(id: string): void;
-  remove(id: string): void;
-  clear(): void;
-}
-```
+Сервис для работы с товарами через API.
+##### Методы:
 
-**Конструктор:**  
-`constructor(items: string[])` — принимает список ID товаров, уже добавленных в корзину.
-
-**Роль:** Управляет состоянием корзины — добавляет, удаляет товары и очищает корзину.
-
-**Свойства:** `items: string[]` — id товаров в корзине.
-
-**Методы:**
-```
-add(id: string): void;
-remove(id: string): void;
-clear(): void;
-```
----
-
-### OrderModel
+`fetchProducts(): Promise<Product[]>`
 
-```
-class OrderModel {
-  constructor(order: ApiOrder);
-  setAddress(address: string): void;
-  setPayment(payment: string): void;
-  getTotal(products: ApiProduct[]): number;
-}
-```
-**Роль:** Хранит данные заказа, адрес, способ оплаты, вычисляет итог.
-
-**Конструктор:**  
-`constructor(order: ApiOrder)`
-
-`order` — объект заказа.
+`fetchProductById(id: string): Promise<Product>`
 
-**Свойства:**
-`order: ApiOrder` — данные заказа.
-
-**Методы:**
-```
-setAddress(address: string): void;
-setPayment(payment: string): void;
-getTotal(products: ApiProduct[]): number;
-```
----
-
-### UserModel
-
-```
-class UserModel {
-  constructor(contacts: IUserContacts);
-  setEmail(email: string): void;
-  setPhone(phone: string): void;
-}
-```
-
-**Конструктор:**  
-`constructor(contacts: IUserContacts)` — принимает контактную информацию пользователя (email и телефон).
-
-`contacts` — объект с email и телефоном.
-
-**Роль:** Хранит контактные данные пользователя.
-
-
-**Свойства:**
-`email: string`
-`phone: string`
-
-**Методы:**
-```
-setEmail(email: string): void;
-setPhone(phone: string): void;
-```
----
-
-### Component<T>
-
-```
-class Component<T> {
-  constructor(container: HTMLElement);
-  render(data?: T): HTMLElement;
-  show(): void;
-  hide(): void;
-}
-```
-
-**Конструктор:**  
-`constructor(container: HTMLElement)` — принимает DOM-элемент `container`, в который будет рендериться компонент.
-
-**Методы:**
-```
-render(data?: T): HTMLElement;
-show(): void;
-hide(): void;
-```
----
-
-### CardView
-
-```
-class CardView extends Component<ViewProduct> {
-  constructor(product: ViewProduct, inBasket: boolean);
-  render(): void;
-  update(inBasket: boolean): void;
-}
-```
-**Конструктор:**  
-`constructor(product: ViewProduct, inBasket: boolean)` — принимает товар и флаг, находится ли товар в корзине.
-
-`product` — данные товара.
-`inBasket` — флаг, есть ли товар в корзине.
-
-**Роль:** Отображает карточку товара.
-
-**Методы:**
-render(): void;
-update(inBasket: boolean): void;
-
----
-
-### BasketView
-
-```
-class BasketView {
-  render(items: IBasketItemView[]): void;
-  toggleButton(enabled: boolean): void;
-  setTotal(total: number): void;
-}
-```
-**Роль:** Отображает корзину и управляет её состоянием.
-
----
-
-### ModalView
-
-```
-class ModalView {
-  constructor(content: HTMLElement);
-  show(): void;
-  hide(): void;
-  setContent(content: HTMLElement): void;
-}
-```
-**Роль:** Управляет модальным окном.
-
-**Конструктор:**  
-`constructor(content: HTMLElement)` — принимает начальное содержимое модального окна.
-
----
-
-### FormView
-
-```
-class FormView {
-  constructor(onSubmit: (data: object) => void);
-  render(): void;
-  getData(): object;
-  showErrors(errors: string[]): void;
-  reset(): void;
-}
-```
-**Роль:** Базовая форма с обработкой данных и ошибок.
-
-**Конструктор:**  
-`constructor(onSubmit: (data: object) => void)` — принимает callback-функцию, вызываемую при отправке формы.
-
-**Методы:**
-```
-render(): void;
-getData(): object;
-showErrors(errors: string[]): void;
-reset(): void;
-```
----
-
-### OrderFormView
-
-```
-class OrderFormView extends FormView {
-  constructor(onSubmit: (data: object) => void);
-}
-```
-
----
-
-## Классы форм заказа и контактов
-`OrderFormView` и `ContactsFormView` расширяют `FormView` и принимают callback `onSubmit`.
-
-### ContactsFormView
-
-```
-class ContactsFormView extends FormView {
-  constructor(onSubmit: (data: object) => void);
-}
-```
-
----
-
-### OrderSuccessView
-
-```
-class OrderSuccessView {
-  constructor(container: HTMLElement);
-  show(orderId: string): void;
-}
-```
-
-**Конструктор:**  
-`constructor(container: HTMLElement)` — принимает контейнер, в который отображается сообщение об успехе.
-
----
-
-## Типы данных
-
-```
-interface ApiProduct {
-  id: string;
-  title: string;
-  description: string;
-  image: string;
-  category: string;
-  price: number | null;
-}
-
-interface ApiOrder {
-  items: string[];
-  address: string;
-  payment: string;
-}
-
-interface ApiOrderResponse {
-  id: string;
-  total: number;
-}
-
-interface ViewProduct {
-  id: string;
-  title: string;
-  image: string;
-  price: number;
-  inBasket: boolean;
-}
-
-interface IUserContacts {
-  email: string;
-  phone: string;
-}
-```
-
----
+### Models
+`ProductModel`
+
+Хранит список товаров.
+##### Методы:
+
+`setProducts(products: Product[])`
+
+`getProductById(id: string)`
+
+`getProducts()`
+
+`BasketModel`
+
+Управляет корзиной и деталями заказа.
+##### Методы:
+
+`addItem(product: Product)`
+
+`removeItem(id: string)`
+
+`getItems(): Product[]`
+
+`getTotal(): number`
+
+`clearCart()`
+
+`setOrderDetails({ payment, address })`
+
+`getOrderDetails()`
+
+`hasItem(id: string)`
+
+### Views
+`ProductListView`
+
+Отображает каталог товаров.
+##### Метод: `render(products: Product[])`.
+
+`ProductDetailView`
+
+Показывает детальную карточку товара.
+##### Метод: `render(product: Product)`.
+
+`CardView`
+
+Рендерит карточку товара в корзине.
+##### Метод: `render(product: Product, index: number)`.
+
+`BasketView`
+
+Отображает корзину.
+##### Метод: `render(items: Product[], total: number)`.
+
+ModalView
+
+Управляет модальным окном.
+##### Методы: `open(), close(), setContent(content, type?)`, `isOpen()`.
+
+`FormView` (абстрактный)
+
+Базовый класс для форм.
+##### Методы:
+
+`getForm()`
+
+`setSubmitButtonState(isValid: boolean)`
+
+`OrderFormView`
+
+Форма заказа (оплата + адрес).
+
+`ContactsFormView`
+
+Форма контактов (email, телефон).
+
+### Utils
+`Page` (`Page.ts`)
+
+Управляет элементами страницы (например, счётчиком корзины).
+##### Метод: `setBasketCount(count: number)`.
+
+`FormValidator` (`FormValidator.ts`)
+
+Базовая валидация форм.
+##### Метод: validate(): boolean.
+
+`validators.ts`
+
+Набор функций:
+
+`validateEmail(email)`
+
+`validatePhone(phone)`
+
+`validateAddress(address)`
+
+`validatePaymentMethod(method)`
 
 ## События
-
-| Событие         | Описание                       | Payload                             |
-|----------------|--------------------------------|-------------------------------------|
-| product:add     | Добавление товара              | `{ id: string }`                    |
-| product:remove  | Удаление товара                | `{ id: string }`                    |
-| basket:open     | Открытие корзины               | `undefined`                         |
-| order:submit    | Отправка заказа                | `{ order: ApiOrder }`               |
-### EventPayloads 
-
-Данные, передаваемые с событиями: 
-
-``` 
-
-interface IEventPayloads { 
-  'product:add': { id: string }; 
-  'product:remove': { id: string }; 
-  'basket:open': undefined; 
-  'order:submit': { order: ApiOrder }; 
-} 
-```
 ---
+| Событие         | Описание                       | Payload                             |
+|-----------------|--------------------------------|-------------------------------------|
+| productsLoaded  | Загрузка товаров               | `Product[]`                         |
+| productSelected | Выбор товара                   | `productId: string`                 |
+| addToCart       | Добавление товара в корзину    | `Product `                          |
+| removeFromCart  | Удаление товара из корзины     | `productId: string`                 |
+| cartUpdated     | Обновление корзины             | `void`                              |
+| cartOpened      | Открытие корзины               | `void`                               |
+| checkout        | Начало оформления заказа       | `void`                               |
+| orderStepCompleted    | Заполнен шаг оплаты/адреса | `{ payment: PaymentMethod, address: string }` |
+| formSubmitted    | Отправка контактов | `email: string, phone: string`               |
+| orderSuccess    | Заказ успешно оформлен | `void`                                     |
+| navigateToProducts    | Переход обратно в каталог | `void`                            |
+
+# Типы данных
 
 ## Интерфейсы
 
+``` 
+interface Product {
+  id: string;
+  description: string;
+  image: string;
+  title: string;
+  category: string;
+  price: number | null;
+}
 ```
-interface IProductModel {
-  new (products: ApiProduct[]): IProductModel;
-  products: ApiProduct[];
-  getProductById(id: string): ApiProduct | undefined;
+```
+interface ProductList {
+  total: number;
+  items: Product[];
 }
-
-IBasketModel {
-  new (items: string[]): IBasketModel;
-  items: string[];
-  add(id: string): void;
-  remove(id: string): void;
-  clear(): void;
-}
-
-interface IOrderModel {
-  new (order: ApiOrder): IOrderModel;
-  order: ApiOrder;
-  setAddress(address: string): void;
-  setPayment(payment: string): void;
-  getTotal(products: ApiProduct[]): number;
-}
-
-interface IUserModel {
-  new (contacts: IUserContacts): IUserModel;
+```
+```
+interface Order {
+  payment: PaymentMethod;
   email: string;
   phone: string;
-  setEmail(email: string): void;
-  setPhone(phone: string): void;
+  address: string;
+  total: number;
+  items: string[];
 }
 ```
-
----
-
-## Контроль событий
-
 ```
-interface IEventPayloads {
-  'product:add': { id: string };
-  'product:remove': { id: string };
-  'basket:open': undefined;
-  'order:submit': { order: ApiOrder };
+interface OrderResponse {
+  id: string;
+  total: number;
 }
 ```
-
----
+```
+interface APIError {
+  error: string;
+}
+```
+```
+interface APIClient {
+  getProducts(): Promise<ProductList>;
+  getProduct(id: string): Promise<Product>;
+  createOrder(order: Order): Promise<OrderResponse>;
+}
+```
 
 ## Финальная структура
 
-| Интерфейс         | Назначение                                           | 
-|---------------|---------------------------------------------------------| 
-| IComponent        | Базовый UI-компонент с методами render/show/hide     | 
-| ICardView         | Карточка товара с состоянием (в корзине или нет)     | 
-| IProductItemView  | Отображение товара в каталоге                        | 
-| IBasketItemView   | Отображение товара в корзине                         | 
-| IPageView         | Главная страница с каталогом товаров                 | 
-| IBasketView       | Отображение корзины, управление списком и итогом     | 
-| IModalView        | Модальное окно для форм и сообщений                  | 
-| IFormView         | Базовая форма с обработкой данных и ошибок           | 
-| IOrderFormView    | Форма оформления заказа                              | 
-| IContactsFormView | Форма ввода контактных данных                        | 
-| IOrderSuccessView | Отображение успешного оформления заказа              | 
-| IProductModel     | Модель каталога товаров с поиском по id              | 
-| IBasketModel      | Модель корзины с добавлением, удалением и очисткой   | 
-| IOrderModel       | Модель заказа с адресом, оплатой и подсчётом итога   | 
-| IUserModel        | Модель пользователя с контактными данными            | 
+| Интерфейс       | Назначение                                              | 
+|-----------------|---------------------------------------------------------| 
+| api.ts          | Класс Api – базовый HTTP-клиент                         | 
+| EventBus.ts     | Класс EventBus – событийная система                     | 
+| BasketModel     | Модель корзины (BasketModel)                            | 
+| ProductModel    | Модель каталога товаров (ProductModel)                  | 
+| BasketView      | Отображение корзины                                     | 
+| CardView        | Карточка товара                                         | 
+| ContactsFormView| Форма контактов (email, телефон)                        | 
+| FormView        | Базовый класс формы                                     | 
+| ModalView       | Модальное окно                                          |  
+| OrderFormView   | Форма заказа (оплата и адрес)                           | 
+| ProductDetailView | Детальная карточка товара                             | 
+| ProductListView | Каталог товаров                                         | 
+| constants       | Константы проекта                                       | 
+| FormValidator   | Класс валидации форм                                    | 
+| Page.ts         | Управление состоянием страницы                          | 
+| utils.ts        | Утилиты                                                 | 
+| validators.ts   | Функции валидации                                       | 

@@ -1,32 +1,70 @@
-import { BaseComponent } from '../base/BaseComponent';
-import type { ViewProduct } from '../types/type';
-import { EventBus } from '../base/EventBus';
+// Файл: /src/views/Card.ts
 
-export class CardView extends BaseComponent<ViewProduct> {
-  constructor(bus: EventBus) {
-    super(document.createElement('div'), bus);
-    this.el.className = 'card';
-    this.render(); // Инициализируем разметку
+/**
+ * Модуль предоставляет класс `Card` для создания карточек товаров.
+ */
+
+import { Product } from '../types';
+import { EventEmitter } from '../base/EventBus';
+import { CDN_URL } from '../utils/constants';
+
+/**
+ * Класс `Card` отвечает за формирование карточек товаров для корзины.
+ */
+export class Card {
+  private emitter: EventEmitter;
+  private template: HTMLTemplateElement;
+
+  /**
+   * Создает экземпляр класса `Card`.
+   * @param emitter - Экземпляр EventEmitter для событийного взаимодействия.
+   */
+  constructor(emitter: EventEmitter) {
+    this.emitter = emitter;
+    const templateElement = document.getElementById('card-basket') as HTMLTemplateElement;
+    if (!templateElement) {
+      throw new Error('Template #card-basket not found');
+    }
+    this.template = templateElement;
   }
 
-  render(data?: ViewProduct) {
-    this.el.innerHTML = ''; // Очищаем
-    if (!data) return this.el;
+  /**
+   * Рендерит карточку товара.
+   * @param product - Объект товара.
+   * @param index - Порядковый номер товара в списке.
+   * @returns Элемент карточки товара.
+   */
+  render(product: Product, index: number): HTMLElement {
+    const cardElement = this.template.content.firstElementChild!.cloneNode(true) as HTMLElement;
 
-    const img = this.createElement('img', 'card__image');
-    const title = this.createElement('h3', 'card__title');
-    const price = this.createElement('p', 'card__price');
-    const button = this.createElement('button', 'card__button');
+    const itemIndex = cardElement.querySelector('.basket__item-index');
+    if (itemIndex) {
+      itemIndex.textContent = (index + 1).toString();
+    }
 
-    img.src = data.image;
-    img.alt = data.title;
-    title.textContent = data.title;
-    price.textContent = `${data.price} синапсов`;
-    button.textContent = data.inBasket ? 'Уже в корзине' : 'В корзину';
-    button.disabled = data.inBasket;
-    button.onclick = () => this.bus.emit('product:add', { id: data.id });
+    const cardTitle = cardElement.querySelector('.card__title');
+    if (cardTitle) {
+      cardTitle.textContent = product.title;
+    }
 
-    this.el.append(img, title, price, button);
-    return this.el;
+    const cardPrice = cardElement.querySelector('.card__price');
+    if (cardPrice) {
+      cardPrice.textContent = `${product.price ?? 0} синапсов`;
+    }
+
+    const cardImage = cardElement.querySelector('.card__image') as HTMLImageElement;
+    if (cardImage) {
+      cardImage.src = `${CDN_URL}/${product.image}`;
+      cardImage.alt = product.title;
+    }
+
+    const deleteButton = cardElement.querySelector('.basket__item-delete') as HTMLButtonElement;
+    if (deleteButton) {
+      deleteButton.addEventListener('click', () => {
+        this.emitter.emit('removeFromCart', product.id);
+      });
+    }
+
+    return cardElement;
   }
 }

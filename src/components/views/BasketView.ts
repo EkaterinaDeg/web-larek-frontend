@@ -1,41 +1,66 @@
-import { BaseComponent } from '../base/BaseComponent';
-import type { ApiProduct } from '../types/type';
-import { EventBus } from '../base/EventBus';
-import { BasketItemView } from './BasketItemView';
+// Файл: /src/views/CartView.ts
 
-export class BasketView extends BaseComponent<{ items: { product: ApiProduct; quantity: number }[] }> {
-  private list: HTMLElement;
-  private totalEl: HTMLElement;
-  private checkoutBtn: HTMLButtonElement;
+/**
+ * Модуль предоставляет класс `CartView` для отображения корзины товаров.
+ */
 
-  constructor(bus: EventBus) {
-    super(document.createElement('div'), bus);
-    this.el.className = 'basket';
+import { Product } from '../types';
+import { EventEmitter } from '../base/EventBus';
+import { Card } from './CardView';
 
-    this.list = this.createElement('ul', 'basket__list');
-    this.totalEl = this.createElement('p', 'basket__price');
-    this.checkoutBtn = this.createElement('button', 'basket__button');
-    this.checkoutBtn.textContent = 'Оформить';
-    this.checkoutBtn.disabled = true;
+/**
+ * Класс `CartView` отвечает за отображение корзины товаров.
+ */
+export class CartView {
+  private emitter: EventEmitter;
+  private template: HTMLTemplateElement;
+  private card: Card;
 
-    this.checkoutBtn.addEventListener('click', () => this.bus.emit('order:open', undefined));
-    this.el.append(this.list, this.totalEl, this.checkoutBtn);
+  /**
+   * Создает экземпляр класса `CartView`.
+   * @param emitter - Экземпляр EventEmitter для событийного взаимодействия.
+   */
+  constructor(emitter: EventEmitter) {
+    this.emitter = emitter;
+    const templateElement = document.getElementById('basket') as HTMLTemplateElement;
+    if (!templateElement) {
+      throw new Error('Template #basket not found');
+    }
+    this.template = templateElement;
+
+    this.card = new Card(emitter);
   }
 
-  render(items?: { items: { product: ApiProduct; quantity: number }[] }): HTMLElement {
-    if (!items) return this.el;
-    this.list.innerHTML = '';
-    items.items.forEach(({ product, quantity }, i) => {
-      const item = new BasketItemView(this.bus);
-      this.list.append(item.render({ index: i + 1, product }));
+  /**
+   * Рендерит корзину с товарами.
+   * @param items - Список товаров в корзине.
+   * @param total - Общая стоимость товаров.
+   * @returns Элемент корзины для отображения.
+   */
+  render(items: Product[], total: number): HTMLElement {
+    const basketElement = this.template.content.firstElementChild!.cloneNode(true) as HTMLElement;
+
+    const listElement = basketElement.querySelector('.basket__list') as HTMLElement;
+    listElement.innerHTML = '';
+
+    items.forEach((item, index) => {
+      const listItem = this.card.render(item, index);
+      listElement.appendChild(listItem);
     });
-    const total = items.items.reduce((sum, { product, quantity }) => sum + (product.price ?? 0) * quantity, 0);
-    this.setTotal(total);
-    return this.el;
-  }
 
-  setTotal(total: number) {
-    this.totalEl.textContent = `${total} синапсов`;
-    this.checkoutBtn.disabled = total === 0;
+    const totalPriceElement = basketElement.querySelector('.basket__price');
+    if (totalPriceElement) {
+      totalPriceElement.textContent = `${total} синапсов`;
+    }
+
+    const checkoutButton = basketElement.querySelector('.basket__button') as HTMLButtonElement;
+    if (checkoutButton) {
+      checkoutButton.disabled = items.length === 0;
+      checkoutButton.addEventListener('click', () => {
+        this.emitter.emit('checkout');
+      });
+    }
+
+    return basketElement;
   }
 }

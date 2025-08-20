@@ -1,52 +1,139 @@
-import { FormView } from './FormView';
-import type { IUserContacts } from '../types/type';
-import { EventBus } from '../base/EventBus';
+// Файл: /src/views/ContactsForm.ts
 
-export class ContactsFormView extends FormView<IUserContacts> {
-  private email = '';
-  private phone = '';
+/**
+ * Модуль предоставляет класс `ContactsForm` для обработки формы контактов.
+ */
 
-  constructor(bus: EventBus) {
-    super(document.createElement('div'), bus);
-    this.el.className = 'form';
+import { Form } from './FormView';
+import { EventEmitter } from '../base/EventBus';
+import { FormValidator } from '../utils/FormValidator';
+import { validateEmail, validatePhone } from '../utils/validators';
 
-    const emailInput = this.createElement('input', '', this.el);
-    const phoneInput = this.createElement('input', '', this.el);
-    const errorBox = this.createElement('p', 'form__errors');
-    this.submitButton = this.createElement('button', '');
+/**
+ * Класс `ContactsForm` отвечает за отображение и валидацию формы контактов.
+ */
+export class ContactsForm extends Form {
+  private contactsTemplate: HTMLTemplateElement;
+  private formValidator: FormValidator | undefined;
 
-    emailInput.type = 'email';
-    emailInput.name = 'email';
-    emailInput.placeholder = 'Email';
-    phoneInput.type = 'tel';
-    phoneInput.name = 'phone';
-    phoneInput.placeholder = 'Телефон';
-    this.submitButton.type = 'submit';
-    this.submitButton.textContent = 'Оплатить';
-    this.submitButton.disabled = true;
-    this.errorBox = errorBox;
+  /**
+   * Создает экземпляр класса `ContactsForm`.
+   * @param emitter - Экземпляр EventEmitter для событийного взаимодействия.
+   */
+  constructor(emitter: EventEmitter) {
+    super(emitter);
+    this.contactsTemplate = document.getElementById('contacts') as HTMLTemplateElement;
+    if (!this.contactsTemplate) {
+      throw new Error('Template #contacts not found');
+    }
+  }
+
+  /**
+   * Создает форму контактов из шаблона.
+   * @returns Элемент формы.
+   */
+  protected createForm(): HTMLFormElement {
+    const form = this.contactsTemplate.content.firstElementChild!.cloneNode(
+      true
+    ) as HTMLFormElement;
+    this.currentForm = form;
+    return form;
+  }
+
+  /**
+   * Настраивает форму: добавляет обработчики и валидацию.
+   */
+  protected setupForm(): void {
+    if (!this.currentForm) return;
+
+    this.formValidator = new FormValidator(this.currentForm);
+
+    const emailInput = this.currentForm.querySelector(
+      'input[name="email"]'
+    ) as HTMLInputElement;
+    const phoneInput = this.currentForm.querySelector(
+      'input[name="phone"]'
+    ) as HTMLInputElement;
+    const submitButton = this.currentForm.querySelector(
+      '.modal__actions .button'
+    ) as HTMLButtonElement;
+
+    emailInput.required = true;
+    phoneInput.required = true;
 
     emailInput.addEventListener('input', () => {
-      this.email = emailInput.value.trim();
-      this.validate();
+      this.validateForm();
     });
 
     phoneInput.addEventListener('input', () => {
-      this.phone = phoneInput.value.trim();
-      this.validate();
+      this.validateForm();
     });
 
-    this.el.append(emailInput, phoneInput, errorBox, this.submitButton);
-    this.validate();
+    submitButton.addEventListener('click', (event) => {
+      event.preventDefault();
+      if (this.validateForm()) {
+        this.onSubmit();
+      }
+    });
   }
 
-  protected validate() {
-    const ok = /\S+@\S+\.\S+/.test(this.email) && this.phone.replace(/\D/g, '').length >= 10;
-    this.setSubmitEnabled(ok);
-    this.setError(ok ? '' : 'Введите корректные email и телефон');
+  /**
+   * Валидирует форму контактов и отображает ошибки.
+   * @returns `true`, если форма валидна, иначе `false`.
+   */
+  validateForm(): boolean {
+    if (!this.currentForm) return false;
+
+    const isValid = this.formValidator.validate();
+    this.setSubmitButtonState(isValid);
+
+    const emailInput = this.currentForm.querySelector(
+      'input[name="email"]'
+    ) as HTMLInputElement;
+    const phoneInput = this.currentForm.querySelector(
+      'input[name="phone"]'
+    ) as HTMLInputElement;
+    const errorsElement = this.currentForm.querySelector('.form__errors') as HTMLElement;
+
+    let errors = '';
+
+    // Проверка Email
+    const emailError = validateEmail(emailInput.value);
+    if (emailError) {
+      errors += emailError + '<br>';
+      emailInput.classList.add('input_error');
+    } else {
+      emailInput.classList.remove('input_error');
+    }
+
+    // Проверка телефона
+    const phoneError = validatePhone(phoneInput.value);
+    if (phoneError) {
+      errors += phoneError + '<br>';
+      phoneInput.classList.add('input_error');
+    } else {
+      phoneInput.classList.remove('input_error');
+    }
+
+    // Отображение ошибок
+    if (errorsElement) {
+      errorsElement.innerHTML = errors;
+    }
+
+    return isValid && errors === '';
   }
 
-  getData() {
-    return { email: this.email, phone: this.phone };
+  /**
+   * Обработчик отправки формы контактов.
+   */
+  protected onSubmit(): void {
+    const email = (this.currentForm.querySelector(
+      'input[name="email"]'
+    ) as HTMLInputElement).value.trim();
+    const phone = (this.currentForm.querySelector(
+      'input[name="phone"]'
+    ) as HTMLInputElement).value.trim();
+
+    this.emitter.emit('formSubmitted', { email, phone });
   }
 }

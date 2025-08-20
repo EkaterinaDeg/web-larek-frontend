@@ -1,22 +1,22 @@
 // Файл: /src/index.ts
 
 import './scss/styles.scss';
-import { APIClientImpl } from './api/APIClient';
-import { ProductModel } from './components/models/ProductModel';
-import { CartModel } from './components/models/BasketModel';
-import { ProductService } from './api/ProductService';
-import { ProductListView } from './components/views/ProductListView';
-import { ProductDetailView } from './components/views/ProductDetailView';
-import { CartView } from './components/views/BasketView';
-import { Modal } from './components/views/ModalView';
-import { EventEmitter } from './components/base/EventBus';
-import { Product, Order, PaymentMethod } from './components/types';
-import { API_URL } from './components/utils/constants';
-import { Page } from './components/utils/Page';
+import { APIClientImpl } from '../api/APIClient';
+import { ProductModel } from './models/ProductModel';
+import { CartModel } from './models/BasketModel';
+import { ProductService } from '../api/ProductService';
+import { ProductListView } from './views/ProductListView';
+import { ProductDetailView } from './views/ProductDetailView';
+import { CartView } from './views/BasketView';
+import { Modal } from './views/ModalView';
+import { EventEmitter } from './base/EventBus';
+import { Product, Order, PaymentMethod } from './types';
+import { API_URL } from './utils/constants';
+import { Page } from './utils/Page';
 
 // Импортируем новые классы форм
-import { ContactsForm } from './components/views/ContactsFormView';
-import { OrderForm } from './components/views/OrderFormView';
+import { ContactsForm } from './views/ContactsFormView';
+import { OrderForm } from './views/OrderFormView';
 
 const apiClient = new APIClientImpl(API_URL);
 const emitter = new EventEmitter();

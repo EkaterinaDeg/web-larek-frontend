@@ -1,51 +1,109 @@
-import type { ApiProduct, IBasketModel } from '../types/type';
-import { EventBus } from '../base/EventBus';
-import { ProductModel } from './ProductModel';
+// Файл: /src/models/CartModel.ts
 
-export class BasketModel implements IBasketModel {
-  items: Map<string, number> = new Map();
-  events: EventBus;
+/**
+ * Модуль предоставляет класс `CartModel` для управления корзиной товаров.
+ */
 
-  constructor(events: EventBus, private productModel: ProductModel) {
-    this.events = events;
+import { EventEmitter } from '../base/EventBus';
+import { Product, PaymentMethod } from '../types';
+
+/**
+ * Интерфейс для хранения деталей заказа.
+ */
+interface OrderDetails {
+  payment: PaymentMethod;
+  address: string;
+}
+
+/**
+ * Класс `CartModel` управляет состоянием корзины и деталями заказа.
+ */
+export class CartModel {
+  private items: Product[] = [];
+  private emitter: EventEmitter;
+  private orderDetails: OrderDetails | null = null;
+
+  /**
+   * Создает экземпляр класса `CartModel`.
+   * @param emitter - Экземпляр EventEmitter для событийного взаимодействия.
+   */
+  constructor(emitter: EventEmitter) {
+    this.emitter = emitter;
   }
 
-  add(id: string) {
-    const current = this.items.get(id) || 0;
-    this.items.set(id, current + 1);
-    this.emitChange();
+  /**
+   * Добавляет товар в корзину.
+   * @param item - Товар для добавления.
+   */
+  addItem(item: Product): void {
+    if (this.items.some((existingItem) => existingItem.id === item.id)) {
+      alert('Этот товар уже в корзине');
+      return;
+    }
+
+    this.items.push(item);
+    this.emitter.emit('cartUpdated');
   }
 
-  remove(id: string) {
-    this.items.delete(id);
-    this.emitChange();
+  /**
+   * Удаляет товар из корзины по его ID.
+   * @param id - Идентификатор товара.
+   */
+  removeItem(id: string): void {
+    this.items = this.items.filter((item) => item.id !== id);
+    this.emitter.emit('cartUpdated');
   }
 
-  clear() {
-    this.items.clear();
-    this.emitChange();
+  /**
+   * Возвращает список товаров в корзине.
+   * @returns Массив товаров.
+   */
+  getItems(): Product[] {
+    return this.items;
   }
 
-  getItems(): { product: ApiProduct; quantity: number }[] {
-    const result: { product: ApiProduct; quantity: number }[] = [];
-    this.items.forEach((quantity, id) => {
-      const product = this.productModel.getProduct(id);
-      if (product) result.push({ product, quantity });
-    });
-    return result;
-  }
-
+  /**
+   * Вычисляет общую стоимость товаров в корзине.
+   * @returns Общая стоимость.
+   */
   getTotal(): number {
-    return Array.from(this.items.entries()).reduce((sum, [id, quantity]) => {
-      const p = this.productModel.getProduct(id);
-      return sum + (p?.price ?? 0) * quantity;
-    }, 0);
+    return this.items.reduce((total, item) => total + (item.price || 0), 0);
   }
 
-  private emitChange() {
-    this.events.emit('basket:changed', {
-      items: Array.from(this.items.keys()),
-      total: this.getTotal(),
-    });
+  /**
+   * Очищает корзину и сбрасывает детали заказа.
+   */
+  clearCart(): void {
+    this.items = [];
+    this.orderDetails = null;
+    this.emitter.emit('cartUpdated');
+  }
+
+  /**
+   * Устанавливает детали заказа.
+   * @param details - Детали заказа.
+   */
+  setOrderDetails(details: OrderDetails): void {
+    this.orderDetails = details;
+  }
+
+  /**
+   * Возвращает детали заказа.
+   * @returns Детали заказа.
+   */
+  getOrderDetails(): OrderDetails {
+    if (!this.orderDetails) {
+      throw new Error('Детали заказа не установлены');
+    }
+    return this.orderDetails;
+  }
+
+  /**
+   * Проверяет наличие товара в корзине по его ID.
+   * @param id - Идентификатор товара.
+   * @returns `true`, если товар есть в корзине, иначе `false`.
+   */
+  hasItem(id: string): boolean {
+    return this.items.some((item) => item.id === id);
   }
 }
