@@ -1,14 +1,12 @@
-// Файл: /src/utils/FormValidator.ts
-
-/**
- * Модуль предоставляет класс `FormValidator` для валидации форм.
- */
+// Файл: /src/components/utils/FormValidator.ts
 
 /**
  * Класс `FormValidator` обеспечивает базовую валидацию форм.
  */
 export class FormValidator {
   private formElement: HTMLFormElement;
+  private inputList: NodeListOf<HTMLInputElement | HTMLSelectElement>;
+  private submitButton: HTMLButtonElement | null;
 
   /**
    * Создает экземпляр класса `FormValidator`.
@@ -16,6 +14,10 @@ export class FormValidator {
    */
   constructor(formElement: HTMLFormElement) {
     this.formElement = formElement;
+    this.inputList = this.formElement.querySelectorAll<HTMLInputElement | HTMLSelectElement>(
+      'input[required], select[required]'
+    );
+    this.submitButton = this.formElement.querySelector<HTMLButtonElement>('button[type="submit"]');
     this.attachEventListeners();
   }
 
@@ -32,10 +34,8 @@ export class FormValidator {
    */
   validate(): boolean {
     let isValid = true;
-    const inputs = this.formElement.querySelectorAll<HTMLInputElement>(
-      'input[required], select[required]'
-    );
-    inputs.forEach((input) => {
+
+    this.inputList.forEach((input) => {
       if (!input.value.trim()) {
         isValid = false;
         input.classList.add('input_error');
@@ -43,6 +43,11 @@ export class FormValidator {
         input.classList.remove('input_error');
       }
     });
+
+    if (this.submitButton) {
+      this.submitButton.disabled = !isValid;
+    }
+
     return isValid;
   }
 }

@@ -7,23 +7,20 @@
 import { Product } from '../types';
 import { EventEmitter } from '../base/EventBus';
 import { CDN_URL } from '../utils/constants';
+import { CardView } from '../views/CardView';
 
 /**
  * Класс `ProductDetailView` отвечает за отображение детальной информации о товаре.
  */
-export class ProductDetailView {
+export class ProductDetailView extends CardView {   // 👈 теперь наследуемся
   private emitter: EventEmitter;
   private template: HTMLTemplateElement;
-  private isProductInCart: (productId: string) => boolean;
+  private isProductInCard: (productId: string) => boolean;
 
-  /**
-   * Создает экземпляр класса `ProductDetailView`.
-   * @param emitter - Экземпляр EventEmitter для событийного взаимодействия.
-   * @param isProductInCart - Функция для проверки наличия товара в корзине.
-   */
-  constructor(emitter: EventEmitter, isProductInCart: (productId: string) => boolean) {
+  constructor(emitter: EventEmitter, isProductInCard: (productId: string) => boolean) {
+    super(); // 👈 вызываем конструктор родителя
     this.emitter = emitter;
-    this.isProductInCart = isProductInCart;
+    this.isProductInCard = isProductInCard;
 
     const templateElement = document.getElementById('card-preview') as HTMLTemplateElement;
     if (!templateElement) {
@@ -32,11 +29,6 @@ export class ProductDetailView {
     this.template = templateElement;
   }
 
-  /**
-   * Рендерит детальную информацию о товаре.
-   * @param product - Объект товара.
-   * @returns Элемент с детальной информацией о товаре.
-   */
   render(product: Product): HTMLElement {
     const detailElement = this.template.content.firstElementChild!.cloneNode(true) as HTMLElement;
 
@@ -60,8 +52,7 @@ export class ProductDetailView {
     if (cardCategory) {
       cardCategory.textContent = product.category;
 
-      // Применяем класс категории для цвета
-      const categoryClass = this.getCategoryClass(product.category);
+      const categoryClass = this.getCategoryClass(product.category); // 👈 используем базовый метод
       if (categoryClass) {
         cardCategory.classList.add(categoryClass);
       }
@@ -74,14 +65,13 @@ export class ProductDetailView {
 
     const button = detailElement.querySelector('.button.card__button') as HTMLButtonElement;
 
-    // Блокируем кнопку, если цена равна 0
     if (!product.price) {
       button.disabled = true;
       button.textContent = 'Недоступно';
       button.classList.add('button_disabled');
     } else {
       const updateButtonState = () => {
-        if (this.isProductInCart(product.id)) {
+        if (this.isProductInCard(product.id)) {
           button.textContent = 'Удалить из корзины';
           button.classList.add('button_remove');
         } else {
@@ -90,36 +80,20 @@ export class ProductDetailView {
         }
       };
 
-      updateButtonState(); // Устанавливаем начальное состояние кнопки
+      updateButtonState();
 
       button.addEventListener('click', () => {
-        if (this.isProductInCart(product.id)) {
-          this.emitter.emit('removeFromCart', product.id); // Удаляем товар из корзины
+        if (this.isProductInCard(product.id)) {
+          this.emitter.emit('removeFromCard', product.id);
         } else {
-          this.emitter.emit('addToCart', product); // Добавляем товар в корзину
+          this.emitter.emit('addToCard', product);
         }
-        updateButtonState(); // Обновляем состояние кнопки
+        updateButtonState();
       });
 
-      this.emitter.on('cartUpdated', updateButtonState); // Следим за обновлением корзины
+      this.emitter.on('cardUpdated', updateButtonState);
     }
 
     return detailElement;
-  }
-
-  /**
-   * Возвращает класс категории на основе имени категории.
-   * @param category - Название категории.
-   * @returns Имя класса категории.
-   */
-  private getCategoryClass(category: string): string | null {
-    const categoryClasses: Record<string, string> = {
-      'софт-скил': 'card__category_soft',
-      'другое': 'card__category_other',
-      'жесткий-скил': 'card__category_hard',
-      'дополнительное': 'card__category_additional',
-      'кнопка': 'card__category_button',
-    };
-    return categoryClasses[category.toLowerCase()] || null;
   }
 }

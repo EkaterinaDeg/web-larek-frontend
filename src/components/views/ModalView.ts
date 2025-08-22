@@ -1,4 +1,4 @@
-// Файл: /src/views/Modal.ts
+// Файл: /src/views/ModalView.ts
 
 /**
  * Модуль предоставляет класс `Modal` для управления модальным окном.
@@ -24,7 +24,7 @@ export class Modal {
     this.closeButton = this.modalElement.querySelector('.modal__close');
     this.contentContainer = this.modalElement.querySelector('.modal__content');
 
-    // Навешиваем обработчики событий
+    // Навешиваем обработчики, которые должны жить всё время
     this.initEventListeners();
   }
 
@@ -40,9 +40,6 @@ export class Modal {
         this.close();
       }
     });
-
-    // Обработчик закрытия по клавише ESC
-    document.addEventListener('keydown', this.handleEscapeKey);
   }
 
   private handleEscapeKey = (event: KeyboardEvent): void => {
@@ -52,11 +49,13 @@ export class Modal {
   };
 
   open(): void {
+    document.addEventListener('keydown', this.handleEscapeKey); // ✅ навешиваем только при открытии
     this.modalElement.classList.add('modal_active');
     document.body.classList.add('modal-open');
   }
 
   close(): void {
+    document.removeEventListener('keydown', this.handleEscapeKey); // ✅ снимаем при закрытии
     this.modalElement.classList.remove('modal_active');
     document.body.classList.remove('modal-open');
     this.contentType = null;

@@ -1,13 +1,13 @@
-// Файл: /src/index.ts
+// Файл: /src/components/index.ts
 
 import './scss/styles.scss';
 import { APIClientImpl } from './api/APIClient';
 import { ProductModel } from './components/models/ProductModel';
-import { CartModel } from './components/models/BasketModel';
+import { BasketModel } from './components/models/BasketModel';
 import { ProductService } from './api/ProductService';
 import { ProductListView } from './components/views/ProductListView';
 import { ProductDetailView } from './components/views/ProductDetailView';
-import { CartView } from './components/views/BasketView';
+import { BasketView } from './components/views/BasketView';
 import { Modal } from './components/views/ModalView';
 import { EventEmitter } from './components/base/EventBus';
 import { Product, Order, PaymentMethod } from './components/types';
@@ -16,7 +16,7 @@ import { Page } from './components/utils/Page';
 
 // Импортируем новые классы форм
 import { ContactsForm } from './components/views/ContactsFormView';
-import { OrderForm } from './components/views/OrderFormView';
+import { OrderFormView } from './components/views/OrderFormView';
 
 const apiClient = new APIClientImpl(API_URL);
 const emitter = new EventEmitter();
@@ -24,7 +24,7 @@ const page = new Page();
 
 const productService = new ProductService(apiClient);
 const productModel = new ProductModel(emitter);
-const cartModel = new CartModel(emitter);
+const cardModel = new BasketModel(emitter);
 
 const productContainer = document.querySelector('.gallery') as HTMLElement;
 const productListView = new ProductListView(productContainer, emitter);
@@ -34,7 +34,7 @@ const modal = new Modal(modalElement, emitter);
 
 const productDetailView = new ProductDetailView(
   emitter,
-  (productId: string) => cartModel.getItems().some((item) => item.id === productId)
+  (productId: string) => cardModel.getItems().some((item) => item.id === productId)
 );
 
 // Загрузка продуктов
@@ -57,43 +57,43 @@ emitter.on('productSelected', (productId: string) => {
   }
 });
 
-emitter.on('addToCart', (product: Product) => {
-  cartModel.addItem(product);
+emitter.on('addToCard', (product: Product) => {
+  cardModel.addItem(product);
   modal.close();
 });
 
-emitter.on('removeFromCart', (productId: string) => {
-  cartModel.removeItem(productId);
+emitter.on('removeFromCard', (productId: string) => {
+  cardModel.removeItem(productId);
 });
 
-emitter.on('cartUpdated', () => {
-  const items = cartModel.getItems();
-  const total = cartModel.getTotal();
+emitter.on('cardUpdated', () => {
+  const items = cardModel.getItems();
+  const total = cardModel.getTotal();
   page.setBasketCount(items.length);
 
-  if (modal.isOpen() && modal.getContentType() === 'cart') {
-    const cartView = new CartView(emitter);
-    const cartContent = cartView.render(items, total);
-    modal.setContent(cartContent, 'cart');
+  if (modal.isOpen() && modal.getContentType() === 'card') {
+    const cardView = new BasketView(emitter);
+    const cardContent = cardView.render(items, total);
+    modal.setContent(cardContent, 'card');
   }
 });
 
 const basketButton = document.querySelector('.header__basket') as HTMLElement;
 if (basketButton) {
   basketButton.addEventListener('click', () => {
-    const items = cartModel.getItems();
-    const total = cartModel.getTotal();
-    const cartView = new CartView(emitter);
-    const cartContent = cartView.render(items, total);
-    modal.setContent(cartContent, 'cart');
+    const items = cardModel.getItems();
+    const total = cardModel.getTotal();
+    const cardView = new BasketView(emitter);
+    const cardContent = cardView.render(items, total);
+    modal.setContent(cardContent, 'card');
     modal.open();
-    emitter.emit('cartOpened');
+    emitter.emit('cardOpened');
   });
 }
 
-// Изменяем обработчик на использование нового класса OrderForm
+// Изменяем обработчик на использование нового класса OrderFormView
 emitter.on('checkout', () => {
-  const orderFormInstance = new OrderForm(emitter);
+  const orderFormInstance = new OrderFormView(emitter);
   const formElement = orderFormInstance.getForm();
   modal.setContent(formElement, 'checkout');
   modal.open();
@@ -102,7 +102,7 @@ emitter.on('checkout', () => {
 // Изменяем обработчик на использование нового класса ContactsForm
 emitter.on('orderStepCompleted', (data: { payment: PaymentMethod; address: string }) => {
   const { payment, address } = data;
-  cartModel.setOrderDetails({ payment, address });
+  cardModel.setOrderDetails({ payment, address });
 
   const contactsFormInstance = new ContactsForm(emitter);
   const contactsFormElement = contactsFormInstance.getForm();
@@ -110,22 +110,22 @@ emitter.on('orderStepCompleted', (data: { payment: PaymentMethod; address: strin
 });
 
 emitter.on('formSubmitted', async (data: { email: string; phone: string }) => {
-  const orderDetails = cartModel.getOrderDetails();
+  const orderDetails = cardModel.getOrderDetails();
   const order: Order = {
     payment: orderDetails.payment,
     email: data.email,
     phone: data.phone,
     address: orderDetails.address,
-    total: cartModel.getTotal(),
-    items: cartModel.getItems().map((item) => item.id),
+    total: cardModel.getTotal(),
+    items: cardModel.getItems().map((item) => item.id),
   };
 
   try {
     await apiClient.createOrder(order);
-    cartModel.clearCart();
+    cardModel.clearCard();
     const successMessage = getSuccessMessage(order.total);
     modal.setContent(successMessage, 'success');
-    emitter.emit('cartUpdated');
+    emitter.emit('cardUpdated');
     emitter.emit('orderSuccess');
   } catch (error) {
     alert(`Ошибка оформления заказа: ${(error as Error).message}`);

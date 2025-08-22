@@ -1,4 +1,4 @@
-// Файл: /src/views/Card.ts
+// Файл: /src/views/CardView.ts
 
 /**
  * Модуль предоставляет класс `Card` для создания карточек товаров.
@@ -61,10 +61,32 @@ export class Card {
     const deleteButton = cardElement.querySelector('.basket__item-delete') as HTMLButtonElement;
     if (deleteButton) {
       deleteButton.addEventListener('click', () => {
-        this.emitter.emit('removeFromCart', product.id);
+        this.emitter.emit('removeFromCard', product.id);
       });
     }
 
     return cardElement;
+  }
+}
+
+/**
+ * Базовый класс CardView для работы с карточками товаров.
+ * Содержит общие методы, которые используются в разных представлениях.
+ */
+export class CardView {
+  /**
+   * Возвращает CSS-класс для категории.
+   * @param category - название категории.
+   */
+  protected getCategoryClass(category: string): string | null {
+    const categoryClasses: Record<string, string> = {
+      'софт-скил': 'card__category_soft',
+      'другое': 'card__category_other',
+      'жесткий-скил': 'card__category_hard',
+      'дополнительное': 'card__category_additional',
+      'кнопка': 'card__category_button',
+    };
+
+    return categoryClasses[category.toLowerCase()] || null;
   }
 }

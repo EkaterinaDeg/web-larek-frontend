@@ -1,7 +1,7 @@
-// Файл: /src/models/CartModel.ts
+// Файл: /src/models/BasketModel.ts
 
 /**
- * Модуль предоставляет класс `CartModel` для управления корзиной товаров.
+ * Модуль предоставляет класс `BasketModel` для управления корзиной товаров.
  */
 
 import { EventEmitter } from '../base/EventBus';
@@ -16,15 +16,15 @@ interface OrderDetails {
 }
 
 /**
- * Класс `CartModel` управляет состоянием корзины и деталями заказа.
+ * Класс `BasketModel` управляет состоянием корзины и деталями заказа.
  */
-export class CartModel {
+export class BasketModel {
   private items: Product[] = [];
   private emitter: EventEmitter;
   private orderDetails: OrderDetails | null = null;
 
   /**
-   * Создает экземпляр класса `CartModel`.
+   * Создает экземпляр класса `BasketModel`.
    * @param emitter - Экземпляр EventEmitter для событийного взаимодействия.
    */
   constructor(emitter: EventEmitter) {
@@ -42,7 +42,7 @@ export class CartModel {
     }
 
     this.items.push(item);
-    this.emitter.emit('cartUpdated');
+    this.emitter.emit('cardUpdated');
   }
 
   /**
@@ -51,7 +51,7 @@ export class CartModel {
    */
   removeItem(id: string): void {
     this.items = this.items.filter((item) => item.id !== id);
-    this.emitter.emit('cartUpdated');
+    this.emitter.emit('cardUpdated');
   }
 
   /**
@@ -73,10 +73,10 @@ export class CartModel {
   /**
    * Очищает корзину и сбрасывает детали заказа.
    */
-  clearCart(): void {
+  clearCard(): void {
     this.items = [];
     this.orderDetails = null;
-    this.emitter.emit('cartUpdated');
+    this.emitter.emit('cardUpdated');
   }
 
   /**
